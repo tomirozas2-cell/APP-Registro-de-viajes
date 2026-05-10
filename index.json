@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/procesador_envios_v3.html" }
+  ]
+}
