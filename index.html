@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Entelequia · Envíos</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
@@ -225,6 +226,22 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
 .add-loc-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:7px 11px;border-radius:6px;transition:border-color .2s}
 .add-loc-input:focus{outline:none;border-color:var(--red)}
 .btn-add{background:var(--red);border:none;color:white;padding:7px 16px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;transition:filter .15s}.btn-add:hover{filter:brightness(1.15)}
+
+/* MODAL BACKUP */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--s1);border:1px solid var(--border2);border-radius:14px;padding:28px 32px;width:340px}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;margin-top:20px}
+.btn-modal-cancel{flex:1;padding:11px;background:var(--s3);border:1px solid var(--border);color:var(--muted2);border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;transition:all .15s}
+.btn-modal-cancel:hover{border-color:var(--border2);color:var(--text)}
+.btn-modal-ok{flex:1;padding:11px;background:linear-gradient(135deg,var(--red),var(--red2));border:none;color:white;border-radius:8px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;transition:filter .15s}
+.btn-modal-ok:hover{filter:brightness(1.1)}
+
+/* MATANZA CP */
+.matanza-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.matanza-col-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.matanza-col-title.c1{color:var(--c1)}.matanza-col-title.c2{color:var(--c2)}
 
 /* HISTORIAL */
 .hist-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
@@ -449,11 +466,13 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
       <button class="zone-tab" data-zt="C1" onclick="switchZoneTab('C1')">CORDÓN 1</button>
       <button class="zone-tab" data-zt="C2" onclick="switchZoneTab('C2')">CORDÓN 2</button>
       <button class="zone-tab" data-zt="C3" onclick="switchZoneTab('C3')">CORDÓN 3</button>
+      <button class="zone-tab" data-zt="MATANZA" onclick="switchZoneTab('MATANZA')" style="color:var(--c3)">LA MATANZA</button>
     </div>
     <div id="ze-CABA" class="zone-editor-area active"></div>
     <div id="ze-C1" class="zone-editor-area"></div>
     <div id="ze-C2" class="zone-editor-area"></div>
     <div id="ze-C3" class="zone-editor-area"></div>
+    <div id="ze-MATANZA" class="zone-editor-area"></div>
     <p style="font-size:11px;color:var(--muted);margin-top:10px;font-style:italic">💾 Se guarda en este navegador.</p>
   </div>
 </div>
@@ -471,7 +490,10 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
       <select id="histYearSelect" onchange="setHistYear(this.value)" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:6px 10px;border-radius:6px;margin-left:6px;cursor:pointer">
       </select>
     </div>
-    <button class="btn btn-sm" onclick="loadHistorial()">↻ Actualizar</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="loadHistorial()">↻ Actualizar</button>
+      <button class="btn btn-sm" onclick="openBackupModal()" style="border-color:rgba(251,191,36,.4);color:var(--c3)">⬇ Backup año</button>
+    </div>
   </div>
 
   <div class="hist-summary">
@@ -489,6 +511,22 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
 </main>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- MODAL BACKUP AÑO -->
+<div class="modal-overlay" id="backupModal">
+  <div class="modal-box">
+    <div class="modal-title">BACKUP DE AÑO</div>
+    <p style="font-size:12px;color:var(--muted2);margin-bottom:16px">Se descargará un ZIP con un Excel por día del año elegido.</p>
+    <div class="field-group">
+      <label class="field-label">AÑO</label>
+      <select id="backupYearSelect" class="field-select"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeBackupModal()">Cancelar</button>
+      <button class="btn-modal-ok" id="btnBackupOk" onclick="confirmYearBackup()">DESCARGAR</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════
@@ -523,6 +561,12 @@ const DEFAULT_ZONES={
 let ZONES={};
 function loadZones(){try{const z=localStorage.getItem('adf_zones');ZONES=z?JSON.parse(z):JSON.parse(JSON.stringify(DEFAULT_ZONES))}catch(e){ZONES=JSON.parse(JSON.stringify(DEFAULT_ZONES))}}
 function saveZones(){localStorage.setItem('adf_zones',JSON.stringify(ZONES))}
+
+// CP de La Matanza (C1/C2 según código postal)
+const DEFAULT_MATANZA_CP={C1:[],C2:[]};
+let MATANZA_CP={};
+function loadMatanzaCP(){try{const m=localStorage.getItem('adf_matanza_cp');MATANZA_CP=m?JSON.parse(m):JSON.parse(JSON.stringify(DEFAULT_MATANZA_CP))}catch(e){MATANZA_CP=JSON.parse(JSON.stringify(DEFAULT_MATANZA_CP))}}
+function saveMatanzaCP(){localStorage.setItem('adf_matanza_cp',JSON.stringify(MATANZA_CP))}
 
 // ══════════════════════════════════════
 // TARIFAS (per mensajeria)
@@ -638,11 +682,18 @@ function normAcc(s){
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
 
-function classify(raw){
+function classify(raw, cp){
   const loc = normAcc(raw);
   if(sessionOverrides[loc]) return sessionOverrides[loc];
   for(const kw of CABA_KW){ if(loc.includes(normAcc(kw))) return 'CABA'; }
   if(['buenos aires','caba','capital'].includes(loc)) return 'CABA';
+  // La Matanza: si hay CP configurado, usarlo para distinguir C1 y C2
+  if(cp !== undefined && cp !== null && cp !== '' && loc.includes('la matanza')){
+    const cpStr = String(cp).trim();
+    if(MATANZA_CP.C1.includes(cpStr)) return 'C1';
+    if(MATANZA_CP.C2.includes(cpStr)) return 'C2';
+    // CP no configurado aún → cae al matching normal (quedará en C2 por DEFAULT_ZONES)
+  }
   for(const z of['CABA','C1','C2','C3'])
     for(const x of ZONES[z])
       if(loc === normAcc(x)) return z;
@@ -751,6 +802,9 @@ async function processFile(){
       const locIdx=origHeaders.findIndex(h=>normAcc(h).includes('localidad'));
       if(locIdx===-1){alert('No se encontró columna LOCALIDAD.');return}
 
+      // Detect CP column (for La Matanza cordon resolution)
+      const cpIdx=origHeaders.findIndex(h=>normAcc(h).trim()==='cp');
+
       // Detect mensajeria column
       const mensIdx=origHeaders.findIndex(h=>normAcc(h).includes('mensajeria'));
       const dataRows=rows.slice(1).filter(r=>r.some(c=>c!==''));
@@ -760,7 +814,7 @@ async function processFile(){
         const hasMens1=dataRows.some(r=>detectMens(r[mensIdx])==='LUCHO');
         const hasMens3=dataRows.some(r=>detectMens(r[mensIdx])==='ADF');
         if(hasMens1||hasMens3){
-          runClassification(dataRows,locIdx,mensIdx,true); // isSplit=true
+          runClassification(dataRows,locIdx,mensIdx,true,cpIdx); // isSplit=true
           return;
         }
       }
@@ -772,7 +826,7 @@ async function processFile(){
       }
 
       // Manual ADF / LUCHO
-      runClassification(dataRows,locIdx,-1,false);
+      runClassification(dataRows,locIdx,-1,false,cpIdx);
     }catch(err){alert('Error: '+err.message);console.error(err)}
   };
   reader.readAsArrayBuffer(currentFile);
@@ -788,7 +842,7 @@ function getTarifasFor(m){
   };
 }
 
-function runClassification(dataRows,locIdx,mensIdx,isSplit){
+function runClassification(dataRows,locIdx,mensIdx,isSplit,cpIdx){
   const stats={CABA:0,C1:0,C2:0,C3:0,unk:0};
   const unknowns=new Set();
 
@@ -796,7 +850,8 @@ function runClassification(dataRows,locIdx,mensIdx,isSplit){
     let rowMens = isSplit ? detectMens(row[mensIdx]) : selectedMens;
     if(!rowMens||rowMens==='AUTO') rowMens='ADF';
     const tarifas=getTarifasFor(rowMens);
-    const zone=classify(row[locIdx]);
+    const cp = (cpIdx!==undefined && cpIdx>=0) ? row[cpIdx] : undefined;
+    const zone=classify(row[locIdx], cp);
     const valor=zone?tarifas[zone]:null;
     if(zone)stats[zone]++;else{stats.unk++;unknowns.add(String(row[locIdx]))}
     return{row,zone,valor,loc:String(row[locIdx]),mens:rowMens}
@@ -1297,9 +1352,42 @@ function renderZoneEditors(){
     const sorted=[...ZONES[z]].sort();
     el.innerHTML=`<div class="locality-list">${sorted.map(loc=>`<span class="loc-tag">${loc}<button onclick="removeLoc('${z}','${loc.replace(/'/g,"\\'")}')">✕</button></span>`).join('')}</div><div class="add-loc-row"><input class="add-loc-input" id="new-${z}" type="text" placeholder="Agregar localidad..." onkeydown="if(event.key==='Enter')addLoc('${z}')"><button class="btn-add" onclick="addLoc('${z}')">+ Agregar</button></div>`;
   }
+  renderMatanzaCPEditor();
 }
 function addLoc(z){const input=document.getElementById('new-'+z);const val=input.value.trim().toLowerCase();if(!val||ZONES[z].includes(val)){input.value='';return}ZONES[z].push(val);saveZones();input.value='';renderZoneEditors();switchZoneTab(z)}
 function removeLoc(z,loc){ZONES[z]=ZONES[z].filter(x=>x!==loc);saveZones();renderZoneEditors();switchZoneTab(z)}
+
+function renderMatanzaCPEditor(){
+  const el=document.getElementById('ze-MATANZA');
+  if(!el) return;
+  const mkCol=(cordon)=>{
+    const list=[...MATANZA_CP[cordon]].sort();
+    const tags=list.map(cp=>`<span class="loc-tag">${cp}<button onclick="removeMatanzaCP('${cordon}','${cp}')">✕</button></span>`).join('');
+    return `<div>
+      <div class="matanza-col-title ${cordon.toLowerCase()}">${cordon==='C1'?'Cordón 1':'Cordón 2'}</div>
+      <div class="locality-list" style="min-height:32px">${tags}</div>
+      <div class="add-loc-row">
+        <input class="add-loc-input" id="new-mcp-${cordon}" type="text" placeholder="Código postal..." onkeydown="if(event.key==='Enter')addMatanzaCP('${cordon}')">
+        <button class="btn-add" onclick="addMatanzaCP('${cordon}')">+ Agregar</button>
+      </div>
+    </div>`;
+  };
+  el.innerHTML=`<p style="font-size:12px;color:var(--muted2);margin-bottom:14px">Cuando la localidad contiene <strong>La Matanza</strong>, se usa el código postal para determinar el cordón. Agregá los CPs correspondientes a cada uno.</p><div class="matanza-cols">${mkCol('C1')}${mkCol('C2')}</div>`;
+}
+function addMatanzaCP(cordon){
+  const input=document.getElementById('new-mcp-'+cordon);
+  const val=input.value.trim();
+  if(!val||MATANZA_CP[cordon].includes(val)){input.value='';return}
+  MATANZA_CP[cordon].push(val);
+  saveMatanzaCP();
+  input.value='';
+  renderMatanzaCPEditor();
+}
+function removeMatanzaCP(cordon,cp){
+  MATANZA_CP[cordon]=MATANZA_CP[cordon].filter(x=>x!==cp);
+  saveMatanzaCP();
+  renderMatanzaCPEditor();
+}
 
 // ══════════════════════════════════════
 // HISTORIAL
@@ -1441,9 +1529,77 @@ async function redownloadHistorial(id){
 function setSyncDot(panel,state){const el=document.getElementById('sync-'+panel);if(el)el.className='sync-dot '+state}
 
 // ══════════════════════════════════════
+// BACKUP POR AÑO
+// ══════════════════════════════════════
+function openBackupModal(){
+  const sel=document.getElementById('backupYearSelect');
+  sel.innerHTML='';
+  const cur=new Date().getFullYear();
+  for(let y=cur;y>=cur-4;y--){
+    const opt=document.createElement('option');
+    opt.value=y;opt.textContent=y;
+    sel.appendChild(opt);
+  }
+  document.getElementById('backupModal').classList.add('open');
+}
+function closeBackupModal(){
+  document.getElementById('backupModal').classList.remove('open');
+}
+
+async function confirmYearBackup(){
+  const year=+document.getElementById('backupYearSelect').value;
+  const btn=document.getElementById('btnBackupOk');
+  btn.disabled=true;btn.textContent='GENERANDO...';
+  try{
+    const from=`${year}-01-01`;
+    const to=`${year}-12-31`;
+    const records=await supa.get('envios_historial',`fecha=gte.${from}&fecha=lte.${to}&order=fecha.asc,created_at.asc`);
+    if(!records||records.length===0){toast('Sin registros para ese año','error');return}
+    const zip=new JSZip();
+    for(const entry of records){
+      const tarifas=entry.tarifas||{};
+      const rows=[
+        ['Fecha',entry.fecha],
+        ['Mensajería',entry.mensajeria],
+        ['Total envíos',entry.total_envios],
+        ['CABA',entry.total_caba,`$${(entry.total_caba*(tarifas.CABA||0)).toLocaleString('es-AR')}`],
+        ['Cordón 1',entry.total_c1,`$${(entry.total_c1*(tarifas.C1||0)).toLocaleString('es-AR')}`],
+        ['Cordón 2',entry.total_c2,`$${(entry.total_c2*(tarifas.C2||0)).toLocaleString('es-AR')}`],
+        ['Cordón 3',entry.total_c3,`$${(entry.total_c3*(tarifas.C3||0)).toLocaleString('es-AR')}`],
+        ['Sin zona',entry.total_sin_zona,'—'],
+        ['','',''],
+        ['TOTAL FACTURADO','',`$${Math.round(+entry.total_facturado||0).toLocaleString('es-AR')}`],
+      ];
+      const ws=XLSX.utils.aoa_to_sheet([['Campo','Cantidad','Monto'],...rows]);
+      ws['!cols']=[{wch:20},{wch:15},{wch:20}];
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Resumen');
+      const xlsxBuf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+      const fname=`${entry.fecha}_${entry.mensajeria}.xlsx`;
+      zip.file(fname,xlsxBuf);
+    }
+    const content=await zip.generateAsync({type:'blob'});
+    const url=URL.createObjectURL(content);
+    const a=document.createElement('a');
+    a.href=url;a.download=`backup_envios_${year}.zip`;
+    document.body.appendChild(a);a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast(`Backup ${year} descargado — ${records.length} archivos`);
+    closeBackupModal();
+  }catch(err){
+    toast('Error generando backup: '+err.message,'error');
+    console.error(err);
+  }finally{
+    btn.disabled=false;btn.textContent='DESCARGAR';
+  }
+}
+
+// ══════════════════════════════════════
 // INIT
 // ══════════════════════════════════════
 loadZones();
+loadMatanzaCP();
 loadTarifas(); // async, loads from Supabase
 renderZoneEditors();
 </script>
