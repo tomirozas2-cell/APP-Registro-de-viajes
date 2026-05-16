@@ -459,7 +459,7 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
 
 <!-- ═══ ZONAS ═══ -->
 <div class="panel" id="panel-zonas">
-  <div class="page-header"><h2>GESTIÓN DE ZONAS</h2><p>Agregá o eliminá localidades. Se guarda localmente en el navegador.</p></div>
+  <div class="page-header"><h2>GESTIÓN DE ZONAS</h2><p>Agregá o eliminá localidades. Se guarda en la base de datos.</p></div>
   <div class="card">
     <div class="zone-tabs">
       <button class="zone-tab active" data-zt="CABA" onclick="switchZoneTab('CABA')">CABA</button>
@@ -473,7 +473,7 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
     <div id="ze-C2" class="zone-editor-area"></div>
     <div id="ze-C3" class="zone-editor-area"></div>
     <div id="ze-MATANZA" class="zone-editor-area"></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:10px;font-style:italic">💾 Se guarda en este navegador.</p>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;font-style:italic">💾 Se guarda en la base de datos.</p>
   </div>
 </div>
 
@@ -559,14 +559,34 @@ const DEFAULT_ZONES={
   C3:['escobar','pilar','lujan','luján','general rodriguez','general rodríguez','marcos paz','canuelas','cañuelas','san vicente','presidente peron','presidente perón','la plata','ensenada','berisso','zarate','zárate','campana','zelaya','benavidez','benavídez','del viso','los polvorines','manuel b gonnet','melchor romero','ingeniero allan','francisco alvarez','francisco álvarez','ricardo rojas','presidente derqui','abasto']
 };
 let ZONES={};
-function loadZones(){try{const z=localStorage.getItem('adf_zones');ZONES=z?JSON.parse(z):JSON.parse(JSON.stringify(DEFAULT_ZONES))}catch(e){ZONES=JSON.parse(JSON.stringify(DEFAULT_ZONES))}}
-function saveZones(){localStorage.setItem('adf_zones',JSON.stringify(ZONES))}
+async function loadZones(){
+  try{
+    const rows=await supa.get('configuracion','id=eq.zonas');
+    if(rows&&rows.length>0){ZONES=rows[0].valor;localStorage.setItem('adf_zones',JSON.stringify(ZONES));return}
+  }catch(err){console.warn('Supabase load zones failed, usando localStorage:',err)}
+  try{const z=localStorage.getItem('adf_zones');ZONES=z?JSON.parse(z):JSON.parse(JSON.stringify(DEFAULT_ZONES))}catch(e){ZONES=JSON.parse(JSON.stringify(DEFAULT_ZONES))}
+}
+async function saveZones(){
+  localStorage.setItem('adf_zones',JSON.stringify(ZONES));
+  try{await supa.upsert('configuracion',{id:'zonas',valor:ZONES,updated_at:new Date().toISOString()},'id')}
+  catch(err){console.warn('Supabase save zones failed:',err)}
+}
 
 // CP de La Matanza (C1/C2 según código postal)
 const DEFAULT_MATANZA_CP={C1:[],C2:[]};
 let MATANZA_CP={};
-function loadMatanzaCP(){try{const m=localStorage.getItem('adf_matanza_cp');MATANZA_CP=m?JSON.parse(m):JSON.parse(JSON.stringify(DEFAULT_MATANZA_CP))}catch(e){MATANZA_CP=JSON.parse(JSON.stringify(DEFAULT_MATANZA_CP))}}
-function saveMatanzaCP(){localStorage.setItem('adf_matanza_cp',JSON.stringify(MATANZA_CP))}
+async function loadMatanzaCP(){
+  try{
+    const rows=await supa.get('configuracion','id=eq.matanza_cp');
+    if(rows&&rows.length>0){MATANZA_CP=rows[0].valor;localStorage.setItem('adf_matanza_cp',JSON.stringify(MATANZA_CP));return}
+  }catch(err){console.warn('Supabase load matanza_cp failed, usando localStorage:',err)}
+  try{const m=localStorage.getItem('adf_matanza_cp');MATANZA_CP=m?JSON.parse(m):JSON.parse(JSON.stringify(DEFAULT_MATANZA_CP))}catch(e){MATANZA_CP=JSON.parse(JSON.stringify(DEFAULT_MATANZA_CP))}
+}
+async function saveMatanzaCP(){
+  localStorage.setItem('adf_matanza_cp',JSON.stringify(MATANZA_CP));
+  try{await supa.upsert('configuracion',{id:'matanza_cp',valor:MATANZA_CP,updated_at:new Date().toISOString()},'id')}
+  catch(err){console.warn('Supabase save matanza_cp failed:',err)}
+}
 
 // ══════════════════════════════════════
 // TARIFAS (per mensajeria)
@@ -1598,10 +1618,10 @@ async function confirmYearBackup(){
 // ══════════════════════════════════════
 // INIT
 // ══════════════════════════════════════
-loadZones();
-loadMatanzaCP();
-loadTarifas(); // async, loads from Supabase
-renderZoneEditors();
+(async()=>{
+  await Promise.all([loadZones(), loadMatanzaCP(), loadTarifas()]);
+  renderZoneEditors();
+})();
 </script>
 </body>
 </html>
