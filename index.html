@@ -289,6 +289,48 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
 .xgrid tfoot td.foot-lucho { color:var(--lucho); text-align:right; }
 .xgrid tfoot td.foot-total { color:var(--text); text-align:right; }
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ═══════ RESPONSIVE (tablet / mobile) ═══════ */
+@media (max-width:900px){
+  main{max-width:100%}
+}
+@media (max-width:768px){
+  .app{flex-direction:column}
+  nav{position:relative;top:auto;left:auto;bottom:auto;width:100%;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--border)}
+  .nav-logo{padding:8px 10px;border-bottom:none;border-right:1px solid var(--border);flex-shrink:0}
+  .nav-logo img{width:110px!important;margin:0 auto 2px!important}
+  .nav-logo p{margin-top:1px}
+  .nav-links{flex-direction:row;flex:1;padding:8px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .nav-link{white-space:nowrap;padding:8px 10px;flex-shrink:0}
+  .nav-bottom{display:none}
+  main{margin-left:0;padding:18px 14px 60px}
+  .card{padding:16px}
+  .page-header h2{font-size:26px}
+  .tarifas-grid{grid-template-columns:repeat(2,1fr)}
+  .upload-meta-row{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .hist-summary{grid-template-columns:repeat(2,1fr)}
+  .matanza-cols{grid-template-columns:1fr}
+  .motos-topbar{flex-direction:column;align-items:stretch}
+  .period-nav{justify-content:center}
+  .motos-pills{gap:8px}
+  .mpill{min-width:90px}
+  .add-row-form{flex-direction:column;align-items:stretch}
+  .add-field input[type=text],.add-field input[type=number]{width:100%}
+  .hist-entry{flex-direction:column;align-items:stretch;gap:8px}
+  .hist-total{text-align:right}
+  .modal-box{width:88vw;max-width:340px;padding:22px 20px}
+  .sel-bar{flex-direction:column;align-items:stretch;text-align:center}
+  .sel-actions{justify-content:center}
+}
+@media (max-width:480px){
+  .tarifas-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .tarifa-box{padding:10px}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .hist-summary{grid-template-columns:repeat(2,1fr)}
+  .card-title{font-size:14px}
+  .btn-dl,.btn-primary{font-size:15px}
+}
 </style>
 </head>
 <body>
