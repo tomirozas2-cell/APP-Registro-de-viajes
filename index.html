@@ -1726,7 +1726,10 @@ async function loadVentasBelgrano(){
 
     const totalMl=rows.filter(r=>r.channel==='ml').length;
     const totalWeb=rows.filter(r=>r.channel==='web').length;
-    const netoMl=rows.reduce((s,r)=>s+(+r.net_amount||0),0);
+    // Solo sumar ventas de 1 item: en un paquete de varios items el mismo
+    // neto de ML aparece repetido en cada fila (una por producto), sumarlo
+    // tal cual duplicaria el monto.
+    const netoMl=rows.filter(r=>r.channel==='ml'&&r.is_multi_item===false).reduce((s,r)=>s+(+r.net_amount||0),0);
     document.getElementById('vb-total').textContent=rows.length.toLocaleString('es-AR');
     document.getElementById('vb-ml').textContent=totalMl.toLocaleString('es-AR');
     document.getElementById('vb-web').textContent=totalWeb.toLocaleString('es-AR');
@@ -1744,9 +1747,9 @@ async function loadVentasBelgrano(){
           <td>${r.quantity??'—'}</td>
           <td>${r.price?'$'+Math.round(r.price).toLocaleString('es-AR'):'—'}</td>
           <td>${r.order_reference||'—'}</td>
-          <td>${r.channel==='ml'?(r.items_in_order??'—'):'—'}</td>
-          <td>${r.commission?'-$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR'):'—'}</td>
-          <td class="val-cell">${r.net_amount?'$'+Math.round(r.net_amount).toLocaleString('es-AR'):'—'}</td>
+          <td>${r.channel!=='ml'?'—':(r.is_multi_item?`<span style="color:var(--c3)">Paquete x${r.items_in_order}</span>`:(r.items_in_order??'—'))}</td>
+          <td>${r.channel==='ml'&&r.is_multi_item===false&&r.commission?'-$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR'):(r.is_multi_item?'—':'—')}</td>
+          <td class="val-cell">${r.channel==='ml'&&r.is_multi_item===false&&r.net_amount?'$'+Math.round(r.net_amount).toLocaleString('es-AR'):(r.is_multi_item?'<span title="Venta de varios items, no se puede prorratear la comisión por producto" style="color:var(--muted)">— (paquete)</span>':'—')}</td>
         </tr>`).join('');
     }
     if(dot)dot.className='sync-dot ok';
