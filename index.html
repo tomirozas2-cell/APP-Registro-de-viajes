@@ -343,6 +343,7 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
     <button class="nav-link" data-panel="motos" onclick="showPanel('motos',this)"><span class="icon">🏍️</span> Motos<span class="sync-dot" id="sync-motos"></span></button>
     <button class="nav-link" data-panel="zonas" onclick="showPanel('zonas',this)"><span class="icon">🗺️</span> Zonas</button>
     <button class="nav-link" data-panel="historial" onclick="showPanel('historial',this)"><span class="icon">📋</span> Historial<span class="sync-dot" id="sync-historial"></span></button>
+    <button class="nav-link" data-panel="ventas" onclick="showPanel('ventas',this)"><span class="icon">🏪</span> Ventas Belgrano<span class="sync-dot" id="sync-ventas"></span></button>
   </div>
   <div class="nav-bottom">Supabase · v4.1</div>
 </nav>
@@ -547,6 +548,42 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
   <div class="card">
     <div class="card-title"><span class="dot"></span> REGISTROS DEL MES</div>
     <div id="histList"><div class="history-empty"><div class="big">⏳</div><p>Cargando...</p></div></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-ventas">
+  <div class="page-header"><h2>VENTAS BELGRANO</h2><p>Ventas web y MercadoLibre despachadas desde el almacén Belgrano. Se actualiza solo cada 1 hora.</p></div>
+
+  <div id="ventasSessionWarning" style="display:none;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;color:var(--unk);font-size:13px"></div>
+
+  <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat"><div class="stat-val" id="vb-total" style="color:var(--text)">—</div><div class="stat-lbl">Ventas (7 días)</div></div>
+    <div class="stat"><div class="stat-val" id="vb-ml" style="color:var(--c1)">—</div><div class="stat-lbl">MercadoLibre</div></div>
+    <div class="stat"><div class="stat-val" id="vb-web" style="color:var(--c2)">—</div><div class="stat-lbl">Web</div></div>
+    <div class="stat"><div class="stat-val" id="vb-neto" style="color:var(--c3)">—</div><div class="stat-lbl">Neto ML cobrado</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="dot"></span> ÚLTIMAS VENTAS
+      <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <span id="vb-lastsync" style="font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none"></span>
+        <button class="btn btn-sm" onclick="loadVentasBelgrano()">↻ Actualizar</button>
+      </span>
+    </div>
+    <div class="tbl-wrap" style="max-height:520px">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Canal</th><th>Producto</th><th>SKU</th><th>Cant.</th>
+            <th>Precio</th><th>N° Orden</th><th>Ítems orden</th><th>Comisión</th><th>Neto</th>
+          </tr>
+        </thead>
+        <tbody id="ventasBelgranoBody">
+          <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -780,6 +817,7 @@ function showPanel(id,btn){
   if(id==='zonas')renderZoneEditors();
   if(id==='historial')loadHistorial();
   if(id==='motos')loadMotos();
+  if(id==='ventas')loadVentasBelgrano();
 }
 
 // ══════════════════════════════════════
@@ -1654,6 +1692,68 @@ async function confirmYearBackup(){
     console.error(err);
   }finally{
     btn.disabled=false;btn.textContent='DESCARGAR';
+  }
+}
+
+// ══════════════════════════════════════
+// VENTAS BELGRANO
+// ══════════════════════════════════════
+function fmtFechaHora(iso){
+  const d=new Date(iso);
+  return d.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadVentasBelgrano(){
+  const dot=document.getElementById('sync-ventas');
+  if(dot)dot.className='sync-dot loading';
+  const warnEl=document.getElementById('ventasSessionWarning');
+  const body=document.getElementById('ventasBelgranoBody');
+  try{
+    const [status]=await supa.get('sync_status','id=eq.main&select=*');
+    if(status && (status.entelequia_session_ok===false || status.ml_session_ok===false)){
+      const cual=[!status.entelequia_session_ok?'Entelequia':null,!status.ml_session_ok?'MercadoLibre':null].filter(Boolean).join(' y ');
+      warnEl.style.display='block';
+      warnEl.innerHTML=`⚠ La sesión de <b>${cual}</b> venció — el reporte no se está actualizando. Hay que volver a loguearse y reexportar la sesión.`;
+    } else {
+      warnEl.style.display='none';
+    }
+    if(status && status.last_run_at){
+      document.getElementById('vb-lastsync').textContent='Última corrida: '+fmtFechaHora(status.last_run_at);
+    }
+
+    const since=new Date(Date.now()-7*24*3600*1000).toISOString();
+    const rows=await supa.get('ventas_belgrano',`sold_at=gte.${since}&order=sold_at.desc&limit=500`);
+
+    const totalMl=rows.filter(r=>r.channel==='ml').length;
+    const totalWeb=rows.filter(r=>r.channel==='web').length;
+    const netoMl=rows.reduce((s,r)=>s+(+r.net_amount||0),0);
+    document.getElementById('vb-total').textContent=rows.length.toLocaleString('es-AR');
+    document.getElementById('vb-ml').textContent=totalMl.toLocaleString('es-AR');
+    document.getElementById('vb-web').textContent=totalWeb.toLocaleString('es-AR');
+    document.getElementById('vb-neto').textContent='$'+Math.round(netoMl).toLocaleString('es-AR');
+
+    if(!rows.length){
+      body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">Sin ventas en los últimos 7 días.</td></tr>';
+    } else {
+      body.innerHTML=rows.map(r=>`
+        <tr>
+          <td>${fmtFechaHora(r.sold_at)}</td>
+          <td><span class="zbadge" style="${r.channel==='ml'?'background:rgba(96,165,250,.15);color:var(--c1)':'background:rgba(74,222,128,.15);color:var(--c2)'}">${r.channel==='ml'?'ML':'WEB'}</span></td>
+          <td title="${r.title||''}">${r.title||'—'}</td>
+          <td>${r.sku||'—'}</td>
+          <td>${r.quantity??'—'}</td>
+          <td>${r.price?'$'+Math.round(r.price).toLocaleString('es-AR'):'—'}</td>
+          <td>${r.order_reference||'—'}</td>
+          <td>${r.channel==='ml'?(r.items_in_order??'—'):'—'}</td>
+          <td>${r.commission?'-$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR'):'—'}</td>
+          <td class="val-cell">${r.net_amount?'$'+Math.round(r.net_amount).toLocaleString('es-AR'):'—'}</td>
+        </tr>`).join('');
+    }
+    if(dot)dot.className='sync-dot ok';
+  }catch(e){
+    console.error(e);
+    body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--unk)">Error cargando ventas.</td></tr>';
+    if(dot)dot.className='sync-dot err';
   }
 }
 
