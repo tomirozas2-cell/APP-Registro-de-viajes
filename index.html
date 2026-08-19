@@ -585,6 +585,8 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
           <button class="zone-tab vb-range" data-h="168" onclick="setVbRange(168,this)">7 DÍAS</button>
           <button class="zone-tab vb-range" data-h="720" onclick="setVbRange(720,this)">30 DÍAS</button>
         </span>
+        <input type="text" id="vbSearch" placeholder="🔎 buscar producto, SKU, orden, nota..." oninput="vbSearchQuery=this.value;renderVentasBelgrano()" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:7px 10px;border-radius:8px;width:220px">
+
         <span style="display:flex;gap:6px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:5px 8px">
           <input type="date" id="vbDesde" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:5px 7px;border-radius:5px">
           <span style="color:var(--muted);font-size:11px">a</span>
@@ -1833,6 +1835,8 @@ async function addVentaBelgranoManual(){
   }
 }
 
+let vbAllRows=[];
+let vbSearchQuery='';
 let vbRangeHours=24;
 let vbCustomSince=null, vbCustomUntil=null;
 const vbRangeLabel={24:'24 hs',168:'7 días',720:'30 días'};
@@ -1878,9 +1882,31 @@ async function loadVentasBelgrano(){
 
     const since=vbCustomSince||new Date(Date.now()-vbRangeHours*3600*1000).toISOString();
     const untilFilter=vbCustomUntil?`&sold_at=lte.${vbCustomUntil}`:'';
-    const rows=await supa.get('ventas_belgrano',`sold_at=gte.${since}${untilFilter}&order=sold_at.desc&limit=500`);
+    vbAllRows=await supa.get('ventas_belgrano',`sold_at=gte.${since}${untilFilter}&order=sold_at.desc&limit=500`);
+    renderVentasBelgrano();
+    if(dot)dot.className='sync-dot ok';
+  }catch(e){
+    console.error(e);
+    body.innerHTML='<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--unk)">Error cargando ventas.</td></tr>';
+    if(dot)dot.className='sync-dot err';
+  }
+}
 
-    const totalMl=rows.filter(r=>r.channel==='ml').length;
+function filterVbRows(){
+  const q=vbSearchQuery.trim().toLowerCase();
+  if(!q)return vbAllRows;
+  return vbAllRows.filter(r=>
+    (r.title||'').toLowerCase().includes(q) ||
+    (r.sku||'').toLowerCase().includes(q) ||
+    (r.order_reference||'').toLowerCase().includes(q) ||
+    (r.nota||'').toLowerCase().includes(q)
+  );
+}
+
+function renderVentasBelgrano(){
+  const body=document.getElementById('ventasBelgranoBody');
+  const rows=filterVbRows();
+  const totalMl=rows.filter(r=>r.channel==='ml').length;
     const totalWeb=rows.filter(r=>r.channel==='web').length;
     // Solo sumar ventas de 1 item: en un paquete de varios items el mismo
     // neto de ML aparece repetido en cada fila (una por producto), sumarlo
@@ -1892,7 +1918,8 @@ async function loadVentasBelgrano(){
     document.getElementById('vb-neto').textContent='$'+Math.round(netoMl).toLocaleString('es-AR');
 
     if(!rows.length){
-      body.innerHTML=`<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted)">Sin ventas en las últimas ${vbRangeLabel[vbRangeHours]}.</td></tr>`;
+      const msg=vbSearchQuery.trim()?'Sin resultados para "'+escHtml(vbSearchQuery.trim())+'".':`Sin ventas en las últimas ${vbRangeLabel[vbRangeHours]||'fechas elegidas'}.`;
+      body.innerHTML=`<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--muted)">${msg}</td></tr>`;
     } else {
       const canalStyle={
         ml:'background:rgba(96,165,250,.28);color:#bcdcff;box-shadow:inset 0 0 0 1px rgba(96,165,250,.5)',
@@ -1923,11 +1950,6 @@ async function loadVentasBelgrano(){
         </tr>`;
       }).join('');
     }
-    if(dot)dot.className='sync-dot ok';
-  }catch(e){
-    console.error(e);
-    body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--unk)">Error cargando ventas.</td></tr>';
-    if(dot)dot.className='sync-dot err';
   }
 }
 
