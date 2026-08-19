@@ -45,7 +45,7 @@ body.sidebar-collapsed .nav-link{position:relative}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .nav-bottom{padding:10px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);letter-spacing:1px;text-align:center}
 main{margin-left:220px;flex:1;padding:32px 36px 80px;max-width:1200px}
-body:has(#panel-ventas.active) main{max-width:1800px}
+body:has(#panel-ventas.active) main,body:has(#panel-mercaderia.active) main{max-width:1800px}
 
 /* PANELS */
 .panel{display:none}
@@ -280,6 +280,44 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
 .toast.success{border-color:rgba(74,222,128,.4)}.toast.error{border-color:rgba(248,113,113,.4)}
 
 
+/* ═══════ MERCADERÍA SUELTA / ESTADÍSTICAS ═══════ */
+.tipo-pills{display:flex;gap:8px}
+.tipo-pill{flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:var(--s2);cursor:pointer;transition:all .2s;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted2);text-align:center}
+.tipo-pill.entrada.selected{border-color:var(--c2);color:var(--c2);background:rgba(74,222,128,.08)}
+.tipo-pill.salida.selected{border-color:var(--unk);color:var(--unk);background:rgba(248,113,113,.08)}
+.mbadge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.mbadge.entrada{background:rgba(74,222,128,.2);color:var(--c2);box-shadow:inset 0 0 0 1px rgba(74,222,128,.4)}
+.mbadge.salida{background:rgba(248,113,113,.2);color:var(--unk);box-shadow:inset 0 0 0 1px rgba(248,113,113,.4)}
+
+.est-shortcuts{display:flex;gap:6px;flex-wrap:wrap;background:var(--s2);padding:4px;border-radius:10px;border:1px solid var(--border)}
+.est-shortcut{padding:8px 14px;border:none;border-radius:7px;background:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:var(--muted2);transition:all .15s;white-space:nowrap}
+.est-shortcut.active{background:var(--s3);color:var(--text)}
+.est-shortcut:hover{color:var(--text)}
+.est-custom{display:flex;gap:6px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:5px 8px}
+
+.est-total-card{background:linear-gradient(135deg,rgba(230,51,41,.12),rgba(255,90,53,.05));border:1px solid rgba(230,51,41,.3);border-radius:14px;padding:24px;text-align:center;margin-bottom:18px}
+.est-total-lbl{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px}
+.est-total-val{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:1px;line-height:1;background:linear-gradient(135deg,var(--red),var(--red2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.est-total-note{font-size:11px;color:var(--muted);margin-top:8px}
+
+.est-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.est-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px 20px;border-top:3px solid var(--border2)}
+.est-card.web{border-top-color:var(--c2)}
+.est-card.ml{border-top-color:var(--c1)}
+.est-card.entrada{border-top-color:var(--c2)}
+.est-card.salida{border-top-color:var(--unk)}
+.est-card-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;margin-bottom:14px;display:flex;align-items:center;gap:8px;color:var(--text)}
+.est-card.web .est-card-title{color:var(--c2)}.est-card.ml .est-card-title{color:var(--c1)}
+.est-card.entrada .est-card-title{color:var(--c2)}.est-card.salida .est-card-title{color:var(--unk)}
+.est-rows{display:flex;flex-direction:column;gap:9px}
+.est-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.est-row-lbl{font-size:12px;color:var(--muted2)}
+.est-row-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--text)}
+.est-row-val.big{font-size:19px}
+.est-row.sub{padding-left:10px;border-left:2px solid var(--border)}
+.est-row.sub .est-row-val{color:var(--muted2);font-size:13px}
+.est-note{font-size:10px;color:var(--muted);margin-top:10px;line-height:1.4}
+
 /* Grid footer totals row */
 .xgrid tfoot td {
   background:var(--s2);
@@ -334,6 +372,11 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
   .modal-box{width:88vw;max-width:340px;padding:22px 20px}
   .sel-bar{flex-direction:column;align-items:stretch;text-align:center}
   .sel-actions{justify-content:center}
+  .est-grid{grid-template-columns:1fr}
+  .est-total-val{font-size:34px}
+  .est-shortcuts{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .est-custom{flex-wrap:wrap}
+  .tipo-pills{flex-direction:column}
 }
 @media (max-width:480px){
   .tarifas-grid{grid-template-columns:repeat(2,1fr);gap:8px}
@@ -357,6 +400,8 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
     <button class="nav-link" data-panel="zonas" onclick="showPanel('zonas',this)" title="Zonas"><span class="icon">🗺️</span><span class="nav-label"> Zonas</span></button>
     <button class="nav-link" data-panel="historial" onclick="showPanel('historial',this)" title="Historial"><span class="icon">📋</span><span class="nav-label"> Historial</span><span class="sync-dot" id="sync-historial"></span></button>
     <button class="nav-link" data-panel="ventas" onclick="showPanel('ventas',this)" title="Ventas Belgrano"><span class="icon">🏪</span><span class="nav-label"> Ventas Belgrano</span><span class="sync-dot" id="sync-ventas"></span></button>
+    <button class="nav-link" data-panel="mercaderia" onclick="showPanel('mercaderia',this)" title="Mercadería Suelta Belgrano"><span class="icon">📦</span><span class="nav-label"> Mercadería Suelta</span><span class="sync-dot" id="sync-mercaderia"></span></button>
+    <button class="nav-link" data-panel="estadisticas" onclick="showPanel('estadisticas',this)" title="Estadísticas Material Belgrano"><span class="icon">📊</span><span class="nav-label"> Estadísticas Belgrano</span><span class="sync-dot" id="sync-estadisticas"></span></button>
   </div>
   <div class="nav-bottom">Supabase · v4.1</div>
 </nav>
@@ -565,16 +610,9 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
 </div>
 
 <div class="panel" id="panel-ventas">
-  <div class="page-header"><h2>VENTAS BELGRANO</h2><p>Ventas web y MercadoLibre despachadas desde el almacén Belgrano. Se actualiza solo cada 1 hora.</p></div>
+  <div class="page-header"><h2>VENTAS BELGRANO</h2><p>Detalle de ventas web y MercadoLibre despachadas desde el almacén Belgrano. Se actualiza solo cada 1 hora · las estadísticas consolidadas están en la pestaña <b>Estadísticas Belgrano</b>.</p></div>
 
   <div id="ventasSessionWarning" style="display:none;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;color:var(--unk);font-size:13px"></div>
-
-  <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="stat"><div class="stat-val" id="vb-total" style="color:var(--text)">—</div><div class="stat-lbl" id="vb-total-lbl">Ventas (24 hs)</div></div>
-    <div class="stat"><div class="stat-val" id="vb-ml" style="color:var(--c1)">—</div><div class="stat-lbl">MercadoLibre</div></div>
-    <div class="stat"><div class="stat-val" id="vb-web" style="color:var(--c2)">—</div><div class="stat-lbl">Web</div></div>
-    <div class="stat"><div class="stat-val" id="vb-neto" style="color:var(--c3)">—</div><div class="stat-lbl">Neto ML cobrado</div></div>
-  </div>
 
   <div class="card">
     <div class="card-title" style="flex-wrap:wrap;row-gap:10px">
@@ -632,6 +670,147 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
       <div class="add-field"><label>N° ORDEN</label><input type="text" id="vbAddOrden" style="width:120px"></div>
       <div class="add-field"><label>NOTA</label><input type="text" id="vbAddNota" style="width:160px"></div>
       <button class="btn-add-row" onclick="addVentaBelgranoManual()">+ Agregar línea</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MERCADERÍA SUELTA BELGRANO ═══ -->
+<div class="panel" id="panel-mercaderia">
+  <div class="page-header"><h2>MERCADERÍA SUELTA BELGRANO</h2><p>Registro manual de lo que entra y sale del almacén Belgrano (no viene del sync automático).</p></div>
+
+  <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat"><div class="stat-val" id="mb-entradas" style="color:var(--c2)">—</div><div class="stat-lbl" id="mb-range-lbl">Entradas (24 hs)</div></div>
+    <div class="stat"><div class="stat-val" id="mb-salidas" style="color:var(--unk)">—</div><div class="stat-lbl">Salidas</div></div>
+    <div class="stat"><div class="stat-val" id="mb-saldo" style="color:var(--c3)">—</div><div class="stat-lbl">Saldo (PVP web)</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="flex-wrap:wrap;row-gap:10px">
+      <span class="dot"></span> MOVIMIENTOS
+      <span style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <span class="zone-tabs" style="margin:0;padding:3px">
+          <button class="zone-tab mb-range active" data-h="24" onclick="setMbRange(24,this)">24 HS</button>
+          <button class="zone-tab mb-range" data-h="168" onclick="setMbRange(168,this)">7 DÍAS</button>
+          <button class="zone-tab mb-range" data-h="720" onclick="setMbRange(720,this)">30 DÍAS</button>
+        </span>
+        <span style="display:flex;gap:6px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:5px 8px">
+          <input type="date" id="mbDesde" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:5px 7px;border-radius:5px">
+          <span style="color:var(--muted);font-size:11px">a</span>
+          <input type="date" id="mbHasta" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:5px 7px;border-radius:5px">
+          <button class="btn btn-sm" onclick="setMbRangeCustom()">Filtrar</button>
+        </span>
+        <button class="btn btn-sm" onclick="loadMercaderiaBelgrano()">↻ Actualizar</button>
+      </span>
+    </div>
+
+    <div class="add-row-form">
+      <div class="add-field"><label>TIPO</label>
+        <div class="tipo-pills" style="min-width:180px">
+          <button type="button" class="tipo-pill entrada selected" id="mbTipoEntrada" onclick="setMbTipo('entrada')">↓ ENTRA</button>
+          <button type="button" class="tipo-pill salida" id="mbTipoSalida" onclick="setMbTipo('salida')">↑ SALE</button>
+        </div>
+      </div>
+      <div class="add-field"><label>SKU</label>
+        <div style="display:flex;gap:4px">
+          <input type="text" id="mbAddSku" style="width:110px" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarProductoMercaderia()}" onpaste="setTimeout(buscarProductoMercaderia,0)">
+          <button type="button" class="btn btn-sm" onclick="buscarProductoMercaderia()" title="Buscar por SKU/ISBN en la web">🔍</button>
+        </div>
+      </div>
+      <div class="add-field"><label>PRODUCTO</label><input type="text" id="mbAddProducto" placeholder="Título" style="width:220px"></div>
+      <div class="add-field"><label>CANT.</label><input type="number" id="mbAddCantidad" value="1" min="1" style="width:70px"></div>
+      <div class="add-field"><label>PRECIO (PVP WEB)</label><input type="number" id="mbAddPrecio" style="width:110px"></div>
+      <div class="add-field"><label>NOTA</label><input type="text" id="mbAddNota" style="width:160px"></div>
+      <button class="btn-add-row" onclick="addMercaderiaBelgrano()">+ Anotar movimiento</button>
+    </div>
+
+    <div class="tbl-wrap" style="max-height:calc(100vh - 360px);margin-top:14px">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha/Hora</th><th>Tipo</th><th style="min-width:220px">Producto</th><th>SKU</th><th>Cant.</th>
+            <th>Precio (u.)</th><th>Subtotal PVP</th><th style="min-width:170px">Nota</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="mercaderiaBelgranoBody">
+          <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ESTADÍSTICAS MATERIAL BELGRANO ═══ -->
+<div class="panel" id="panel-estadisticas">
+  <div class="page-header"><h2>ESTADÍSTICAS BELGRANO</h2><p>Estadística consolidada de ventas web, MercadoLibre y mercadería recibida/enviada del almacén Belgrano.</p></div>
+
+  <div id="estSessionWarning" style="display:none;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;color:var(--unk);font-size:13px"></div>
+
+  <div class="card">
+    <div class="card-title" style="flex-wrap:wrap;row-gap:10px">
+      <span class="dot"></span> PERÍODO
+      <span style="margin-left:auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="est-shortcuts">
+          <button class="est-shortcut est-range" data-k="hoy" onclick="setEstRange('hoy',this)">HOY</button>
+          <button class="est-shortcut est-range" data-k="semana" onclick="setEstRange('semana',this)">SEMANA</button>
+          <button class="est-shortcut est-range" data-k="mes" onclick="setEstRange('mes',this)">MES</button>
+          <button class="est-shortcut est-range" data-k="3m" onclick="setEstRange('3m',this)">3 MESES</button>
+          <button class="est-shortcut est-range" data-k="6m" onclick="setEstRange('6m',this)">6 MESES</button>
+          <button class="est-shortcut est-range" data-k="1y" onclick="setEstRange('1y',this)">1 AÑO</button>
+          <button class="est-shortcut est-range active" data-k="historico" onclick="setEstRange('historico',this)">HISTÓRICO</button>
+        </div>
+        <span class="est-custom">
+          <input type="date" id="estDesde" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:5px 7px;border-radius:5px">
+          <span style="color:var(--muted);font-size:11px">a</span>
+          <input type="date" id="estHasta" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:5px 7px;border-radius:5px">
+          <button class="btn btn-sm" onclick="setEstRangeCustom()">Filtrar</button>
+        </span>
+        <button class="btn btn-sm" onclick="loadEstadisticas()">↻ Actualizar</button>
+      </span>
+    </div>
+    <p id="est-periodo-lbl" style="font-size:12px;color:var(--muted2)">Histórico completo</p>
+  </div>
+
+  <div class="est-total-card">
+    <div class="est-total-lbl">Total general del período</div>
+    <div class="est-total-val" id="est-total-general">—</div>
+    <div class="est-total-note">Suma de ventas web + MercadoLibre (bruto) + mercadería recibida + mercadería enviada, a PVP web.</div>
+  </div>
+
+  <div class="est-grid">
+    <div class="est-card web">
+      <div class="est-card-title">🌐 VENTAS WEB</div>
+      <div class="est-rows">
+        <div class="est-row"><span class="est-row-lbl">Cantidad de ventas</span><span class="est-row-val" id="est-web-count">—</span></div>
+        <div class="est-row"><span class="est-row-lbl">Total facturado</span><span class="est-row-val big" id="est-web-total">—</span></div>
+      </div>
+      <div class="est-note" id="est-web-note"></div>
+    </div>
+
+    <div class="est-card ml">
+      <div class="est-card-title">🛒 MERCADOLIBRE</div>
+      <div class="est-rows">
+        <div class="est-row"><span class="est-row-lbl">Cantidad de ventas</span><span class="est-row-val" id="est-ml-count">—</span></div>
+        <div class="est-row"><span class="est-row-lbl">Total bruto</span><span class="est-row-val big" id="est-ml-bruto">—</span></div>
+        <div class="est-row sub"><span class="est-row-lbl">Comisiones ML</span><span class="est-row-val" id="est-ml-comision">—</span></div>
+        <div class="est-row sub"><span class="est-row-lbl">Neto cobrado</span><span class="est-row-val" id="est-ml-neto">—</span></div>
+      </div>
+      <div class="est-note" id="est-ml-note"></div>
+    </div>
+
+    <div class="est-card entrada">
+      <div class="est-card-title">↓ MERCADERÍA RECIBIDA</div>
+      <div class="est-rows">
+        <div class="est-row"><span class="est-row-lbl">Cantidad de movimientos</span><span class="est-row-val" id="est-ent-count">—</span></div>
+        <div class="est-row"><span class="est-row-lbl">Total PVP web</span><span class="est-row-val big" id="est-ent-total">—</span></div>
+      </div>
+    </div>
+
+    <div class="est-card salida">
+      <div class="est-card-title">↑ MERCADERÍA ENVIADA</div>
+      <div class="est-rows">
+        <div class="est-row"><span class="est-row-lbl">Cantidad de movimientos</span><span class="est-row-val" id="est-sal-count">—</span></div>
+        <div class="est-row"><span class="est-row-lbl">Total PVP web</span><span class="est-row-val big" id="est-sal-total">—</span></div>
+      </div>
     </div>
   </div>
 </div>
@@ -883,6 +1062,8 @@ function showPanel(id,btn){
   if(id==='historial')loadHistorial();
   if(id==='motos')loadMotos();
   if(id==='ventas')loadVentasBelgrano();
+  if(id==='mercaderia')loadMercaderiaBelgrano();
+  if(id==='estadisticas')loadEstadisticas();
 }
 
 // ══════════════════════════════════════
@@ -1789,8 +1970,8 @@ function saveVentaNota(id,input){
   patchVentaBelgrano(id,{nota:input.value.trim()||null});
 }
 
-async function buscarProductoEntelequia(){
-  const sku=document.getElementById('vbAddSku').value.trim();
+async function buscarProductoPorSku(skuId,productoId,precioId){
+  const sku=document.getElementById(skuId).value.trim();
   if(!sku){toast('Escribí un SKU/ISBN primero','error');return}
   try{
     const r=await fetch(`${SUPA_URL}/functions/v1/buscar-producto?q=${encodeURIComponent(sku)}`,{
@@ -1800,13 +1981,15 @@ async function buscarProductoEntelequia(){
     const data=await r.json();
     const p=data.products&&data.products[0];
     if(!p){toast('No se encontró ningún producto con ese SKU/ISBN','error');return}
-    document.getElementById('vbAddProducto').value=p.title;
-    if(p.price)document.getElementById('vbAddPrecio').value=Math.round(+p.price);
+    document.getElementById(productoId).value=p.title;
+    if(p.price)document.getElementById(precioId).value=Math.round(+p.price);
     toast('Encontrado: '+p.title);
   }catch(e){
     toast('Error buscando producto: '+e.message,'error');
   }
 }
+async function buscarProductoEntelequia(){return buscarProductoPorSku('vbAddSku','vbAddProducto','vbAddPrecio')}
+async function buscarProductoMercaderia(){return buscarProductoPorSku('mbAddSku','mbAddProducto','mbAddPrecio')}
 
 async function addVentaBelgranoManual(){
   const producto=document.getElementById('vbAddProducto').value.trim();
@@ -1847,7 +2030,6 @@ function setVbRange(h,btn){
   document.getElementById('vbDesde').value='';document.getElementById('vbHasta').value='';
   document.querySelectorAll('.vb-range').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('vb-total-lbl').textContent='Ventas ('+vbRangeLabel[h]+')';
   loadVentasBelgrano();
 }
 
@@ -1858,7 +2040,6 @@ function setVbRangeCustom(){
   vbCustomSince=new Date(desde+'T00:00:00').toISOString();
   vbCustomUntil=hasta?new Date(hasta+'T23:59:59').toISOString():null;
   document.querySelectorAll('.vb-range').forEach(b=>b.classList.remove('active'));
-  document.getElementById('vb-total-lbl').textContent='Ventas ('+desde+(hasta?' a '+hasta:' en adelante')+')';
   loadVentasBelgrano();
 }
 
@@ -1906,16 +2087,6 @@ function filterVbRows(){
 function renderVentasBelgrano(){
   const body=document.getElementById('ventasBelgranoBody');
   const rows=filterVbRows();
-  const totalMl=rows.filter(r=>r.channel==='ml').length;
-    const totalWeb=rows.filter(r=>r.channel==='web').length;
-    // Solo sumar ventas de 1 item: en un paquete de varios items el mismo
-    // neto de ML aparece repetido en cada fila (una por producto), sumarlo
-    // tal cual duplicaria el monto.
-    const netoMl=rows.filter(r=>r.channel==='ml'&&r.is_multi_item===false).reduce((s,r)=>s+(+r.net_amount||0),0);
-    document.getElementById('vb-total').textContent=rows.length.toLocaleString('es-AR');
-    document.getElementById('vb-ml').textContent=totalMl.toLocaleString('es-AR');
-    document.getElementById('vb-web').textContent=totalWeb.toLocaleString('es-AR');
-    document.getElementById('vb-neto').textContent='$'+Math.round(netoMl).toLocaleString('es-AR');
 
     if(!rows.length){
       const msg=vbSearchQuery.trim()?'Sin resultados para "'+escHtml(vbSearchQuery.trim())+'".':`Sin ventas en las últimas ${vbRangeLabel[vbRangeHours]||'fechas elegidas'}.`;
@@ -1950,6 +2121,256 @@ function renderVentasBelgrano(){
         </tr>`;
       }).join('');
     }
+}
+
+// ══════════════════════════════════════
+// MERCADERÍA SUELTA BELGRANO
+// ══════════════════════════════════════
+let mbSelectedTipo='entrada';
+let mbAllRows=[];
+let mbRangeHours=24;
+let mbCustomSince=null, mbCustomUntil=null;
+const mbRangeLabel={24:'24 hs',168:'7 días',720:'30 días'};
+
+function fmtMoney(n){return '$'+Math.round(+n||0).toLocaleString('es-AR')}
+
+function setMbTipo(tipo){
+  mbSelectedTipo=tipo;
+  document.getElementById('mbTipoEntrada').classList.toggle('selected',tipo==='entrada');
+  document.getElementById('mbTipoSalida').classList.toggle('selected',tipo==='salida');
+}
+
+function setMbRange(h,btn){
+  mbRangeHours=h;
+  mbCustomSince=null;mbCustomUntil=null;
+  document.getElementById('mbDesde').value='';document.getElementById('mbHasta').value='';
+  document.querySelectorAll('.mb-range').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('mb-range-lbl').textContent='Entradas ('+mbRangeLabel[h]+')';
+  loadMercaderiaBelgrano();
+}
+
+function setMbRangeCustom(){
+  const desde=document.getElementById('mbDesde').value;
+  const hasta=document.getElementById('mbHasta').value;
+  if(!desde){toast('Elegí al menos la fecha "desde"','error');return}
+  mbCustomSince=new Date(desde+'T00:00:00').toISOString();
+  mbCustomUntil=hasta?new Date(hasta+'T23:59:59').toISOString():null;
+  document.querySelectorAll('.mb-range').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mb-range-lbl').textContent='Entradas ('+desde+(hasta?' a '+hasta:' en adelante')+')';
+  loadMercaderiaBelgrano();
+}
+
+async function addMercaderiaBelgrano(){
+  const producto=document.getElementById('mbAddProducto').value.trim();
+  if(!producto){toast('Falta el nombre del producto','error');return}
+  const precio=document.getElementById('mbAddPrecio').value;
+  try{
+    await supa.post('mercaderia_belgrano',{
+      tipo:mbSelectedTipo,
+      title:producto,
+      sku:document.getElementById('mbAddSku').value.trim()||null,
+      quantity:+document.getElementById('mbAddCantidad').value||1,
+      price:precio?+precio:null,
+      nota:document.getElementById('mbAddNota').value.trim()||null,
+      movido_at:new Date().toISOString(),
+    });
+    ['mbAddSku','mbAddProducto','mbAddPrecio','mbAddNota'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mbAddCantidad').value=1;
+    toast('Movimiento anotado');
+    loadMercaderiaBelgrano();
+  }catch(e){
+    toast('Error anotando movimiento: '+e.message,'error');
+  }
+}
+
+async function loadMercaderiaBelgrano(){
+  const dot=document.getElementById('sync-mercaderia');
+  if(dot)dot.className='sync-dot loading';
+  const body=document.getElementById('mercaderiaBelgranoBody');
+  try{
+    const since=mbCustomSince||new Date(Date.now()-mbRangeHours*3600*1000).toISOString();
+    const untilFilter=mbCustomUntil?`&movido_at=lte.${mbCustomUntil}`:'';
+    mbAllRows=await supa.get('mercaderia_belgrano',`movido_at=gte.${since}${untilFilter}&order=movido_at.desc&limit=500`);
+    renderMercaderiaBelgrano();
+    if(dot)dot.className='sync-dot ok';
+  }catch(e){
+    console.error(e);
+    body.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--unk)">Error cargando movimientos.</td></tr>';
+    if(dot)dot.className='sync-dot err';
+  }
+}
+
+function renderMercaderiaBelgrano(){
+  const body=document.getElementById('mercaderiaBelgranoBody');
+  const rows=mbAllRows;
+  const entradas=rows.filter(r=>r.tipo==='entrada');
+  const salidas=rows.filter(r=>r.tipo==='salida');
+  const subtotal=r=>(+r.price||0)*(+r.quantity||1);
+  const entradasTotal=entradas.reduce((s,r)=>s+subtotal(r),0);
+  const salidasTotal=salidas.reduce((s,r)=>s+subtotal(r),0);
+  document.getElementById('mb-entradas').textContent=entradas.length.toLocaleString('es-AR')+' · '+fmtMoney(entradasTotal);
+  document.getElementById('mb-salidas').textContent=salidas.length.toLocaleString('es-AR')+' · '+fmtMoney(salidasTotal);
+  const saldo=entradasTotal-salidasTotal;
+  const saldoEl=document.getElementById('mb-saldo');
+  saldoEl.textContent=(saldo>=0?'+':'−')+fmtMoney(Math.abs(saldo));
+  saldoEl.style.color=saldo>=0?'var(--c2)':'var(--unk)';
+
+  if(!rows.length){
+    body.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Sin movimientos en las últimas ${mbRangeLabel[mbRangeHours]||'fechas elegidas'}.</td></tr>`;
+    return;
+  }
+  body.innerHTML=rows.map(r=>`
+    <tr>
+      <td>${fmtFechaHora(r.movido_at)}</td>
+      <td><span class="mbadge ${r.tipo}">${r.tipo==='entrada'?'↓ ENTRA':'↑ SALE'}</span></td>
+      <td title="${escHtml(r.title)}" style="white-space:normal;max-width:260px">${escHtml(r.title)||'—'}</td>
+      <td>${escHtml(r.sku)||'—'}</td>
+      <td>${r.quantity??'—'}</td>
+      <td>${r.price?fmtMoney(r.price):'—'}</td>
+      <td class="val-cell">${r.price?fmtMoney(subtotal(r)):'—'}</td>
+      <td class="notes-cell"><input type="text" value="${escHtml(r.nota)}" placeholder="✎ nota..." onchange="saveMercaderiaNota(${r.id},this)" style="background:var(--s2);border:1px solid var(--border2);border-radius:6px;padding:5px 7px;color:var(--text);width:160px"></td>
+      <td><button class="btn-estado-toggle" title="Eliminar" onclick="deleteMercaderia(${r.id})" style="border:1.5px solid var(--border2);background:var(--s2);color:var(--muted2);font-weight:800;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:13px">🗑</button></td>
+    </tr>`).join('');
+}
+
+async function saveMercaderiaNota(id,input){
+  try{
+    await supa.patch('mercaderia_belgrano',id,{nota:input.value.trim()||null});
+  }catch(e){
+    toast('Error guardando nota: '+e.message,'error');
+  }
+}
+
+async function deleteMercaderia(id){
+  if(!confirm('¿Eliminar este movimiento?'))return;
+  try{
+    await supa.del('mercaderia_belgrano',id);
+    toast('Movimiento eliminado');
+    loadMercaderiaBelgrano();
+  }catch(e){
+    toast('Error eliminando: '+e.message,'error');
+  }
+}
+
+// ══════════════════════════════════════
+// ESTADÍSTICAS MATERIAL BELGRANO
+// ══════════════════════════════════════
+let estRangeKey='historico';
+let estCustomSince=null, estCustomUntil=null;
+const estRangeLabel={hoy:'Hoy',semana:'Última semana',mes:'Último mes',
+  '3m':'Últimos 3 meses','6m':'Últimos 6 meses','1y':'Último año',historico:'Histórico completo'};
+
+function estRangeToSince(key){
+  const now=new Date();
+  if(key==='hoy'){const d=new Date(now);d.setHours(0,0,0,0);return d.toISOString()}
+  if(key==='semana')return new Date(now.getTime()-7*86400000).toISOString();
+  if(key==='mes')return new Date(now.getTime()-30*86400000).toISOString();
+  if(key==='3m')return new Date(now.getTime()-90*86400000).toISOString();
+  if(key==='6m')return new Date(now.getTime()-180*86400000).toISOString();
+  if(key==='1y')return new Date(now.getTime()-365*86400000).toISOString();
+  return null; // historico
+}
+
+function setEstRange(key,btn){
+  estRangeKey=key;
+  estCustomSince=null;estCustomUntil=null;
+  document.getElementById('estDesde').value='';document.getElementById('estHasta').value='';
+  document.querySelectorAll('.est-range').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('est-periodo-lbl').textContent=estRangeLabel[key];
+  loadEstadisticas();
+}
+
+function setEstRangeCustom(){
+  const desde=document.getElementById('estDesde').value;
+  const hasta=document.getElementById('estHasta').value;
+  if(!desde){toast('Elegí al menos la fecha "desde"','error');return}
+  estCustomSince=new Date(desde+'T00:00:00').toISOString();
+  estCustomUntil=hasta?new Date(hasta+'T23:59:59').toISOString():null;
+  document.querySelectorAll('.est-range').forEach(b=>b.classList.remove('active'));
+  document.getElementById('est-periodo-lbl').textContent=desde+(hasta?' a '+hasta:' en adelante');
+  loadEstadisticas();
+}
+
+async function loadEstadisticas(){
+  const dot=document.getElementById('sync-estadisticas');
+  if(dot)dot.className='sync-dot loading';
+  const warnEl=document.getElementById('estSessionWarning');
+  try{
+    const [status]=await supa.get('sync_status','id=eq.main&select=*');
+    if(status && (status.entelequia_session_ok===false || status.ml_session_ok===false)){
+      const cual=[!status.entelequia_session_ok?'Entelequia':null,!status.ml_session_ok?'MercadoLibre':null].filter(Boolean).join(' y ');
+      warnEl.style.display='block';
+      warnEl.innerHTML=`⚠ La sesión de <b>${cual}</b> venció — las ventas automáticas no se están actualizando, estas estadísticas pueden estar desactualizadas.`;
+    } else {
+      warnEl.style.display='none';
+    }
+
+    const since=estCustomSince||estRangeToSince(estRangeKey);
+    const until=estCustomUntil;
+    const ventasQ=since?`sold_at=gte.${since}${until?`&sold_at=lte.${until}`:''}&order=sold_at.desc&limit=10000`:`order=sold_at.desc&limit=10000`;
+    const mercQ=since?`movido_at=gte.${since}${until?`&movido_at=lte.${until}`:''}&order=movido_at.desc&limit=10000`:`order=movido_at.desc&limit=10000`;
+    const [ventas,merc]=await Promise.all([supa.get('ventas_belgrano',ventasQ),supa.get('mercaderia_belgrano',mercQ)]);
+    renderEstadisticas(ventas,merc);
+    if(dot)dot.className='sync-dot ok';
+  }catch(e){
+    console.error(e);
+    toast('Error cargando estadísticas: '+e.message,'error');
+    if(dot)dot.className='sync-dot err';
+  }
+}
+
+function renderEstadisticas(ventas,merc){
+  const web=ventas.filter(r=>r.channel==='web');
+  const ml=ventas.filter(r=>r.channel==='ml');
+
+  const webConPrecio=web.filter(r=>r.price!=null);
+  const webTotal=webConPrecio.reduce((s,r)=>s+(+r.price||0)*(+r.quantity||1),0);
+  const webSinPrecio=web.length-webConPrecio.length;
+
+  // El detalle de ML (precio/comisión/neto) es por orden, y viene repetido
+  // en cada fila de un mismo paquete de varios productos -- para no
+  // duplicar el monto, se cuenta una sola vez por pack_id/orden.
+  const mlOrders=new Map();
+  ml.forEach(r=>{
+    const key=r.pack_id||r.order_reference||('row'+r.id);
+    if(!mlOrders.has(key))mlOrders.set(key,r);
+  });
+  const mlOrdersArr=[...mlOrders.values()];
+  const mlBruto=mlOrdersArr.reduce((s,r)=>s+(+r.price||0),0);
+  const mlComision=mlOrdersArr.reduce((s,r)=>s+Math.abs(+r.commission||0),0);
+  const mlNeto=mlOrdersArr.reduce((s,r)=>s+(+r.net_amount||0),0);
+  const mlSinDetalle=ml.filter(r=>r.net_amount==null).length;
+
+  const entradas=merc.filter(r=>r.tipo==='entrada');
+  const salidas=merc.filter(r=>r.tipo==='salida');
+  const subtotal=r=>(+r.price||0)*(+r.quantity||1);
+  const entradasTotal=entradas.reduce((s,r)=>s+subtotal(r),0);
+  const salidasTotal=salidas.reduce((s,r)=>s+subtotal(r),0);
+
+  const totalGeneral=webTotal+mlBruto+entradasTotal+salidasTotal;
+
+  document.getElementById('est-total-general').textContent=fmtMoney(totalGeneral);
+
+  document.getElementById('est-web-count').textContent=web.length.toLocaleString('es-AR');
+  document.getElementById('est-web-total').textContent=fmtMoney(webTotal);
+  document.getElementById('est-web-note').textContent=webSinPrecio>0
+    ? `⚠ ${webSinPrecio.toLocaleString('es-AR')} venta(s) web sin precio registrado por el sync automático (no se incluyen en el total $).`
+    : '';
+
+  document.getElementById('est-ml-count').textContent=ml.length.toLocaleString('es-AR');
+  document.getElementById('est-ml-bruto').textContent=fmtMoney(mlBruto);
+  document.getElementById('est-ml-comision').textContent='−'+fmtMoney(mlComision);
+  document.getElementById('est-ml-neto').textContent=fmtMoney(mlNeto);
+  document.getElementById('est-ml-note').textContent=mlSinDetalle>0
+    ? `⚠ ${mlSinDetalle.toLocaleString('es-AR')} venta(s) ML sin detalle de comisión/neto todavía.`
+    : '';
+
+  document.getElementById('est-ent-count').textContent=entradas.length.toLocaleString('es-AR');
+  document.getElementById('est-ent-total').textContent=fmtMoney(entradasTotal);
+  document.getElementById('est-sal-count').textContent=salidas.length.toLocaleString('es-AR');
+  document.getElementById('est-sal-total').textContent=fmtMoney(salidasTotal);
 }
 
 // ══════════════════════════════════════
