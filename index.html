@@ -388,14 +388,20 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:#c
 }
 @media (max-width:768px){
   .app{flex-direction:column}
-  nav{position:relative;top:auto;left:auto;bottom:auto;width:100%;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--border)}
-  .nav-logo{padding:8px 10px;border-bottom:none;border-right:1px solid var(--border);flex-shrink:0}
-  .nav-logo img{width:110px!important;margin:0 auto 2px!important}
-  .nav-logo p{margin-top:1px}
-  .nav-links{flex-direction:row;flex:1;padding:8px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .nav-link{white-space:nowrap;padding:8px 10px;flex-shrink:0}
+  .sidebar-toggle{display:none}
+  nav{position:fixed;top:auto;left:0;right:0;bottom:0;width:100%;height:auto;flex-direction:row;align-items:stretch;border-right:none;border-top:1px solid var(--border);z-index:200}
+  .nav-logo{display:none}
+  .nav-links{flex-direction:row;flex:1;padding:4px 0;gap:0}
+  .nav-link{position:relative;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 2px;white-space:nowrap}
+  .nav-link .icon{font-size:19px;width:auto}
+  .nav-link .nav-label{display:none}
+  .nav-link .sync-dot{position:absolute;top:5px;right:10px;margin:0}
   .nav-bottom{display:none}
-  main{margin-left:0;padding:18px 14px 60px}
+  /* neutraliza el colapso de escritorio: en mobile la barra siempre va abajo, completa */
+  body.sidebar-collapsed nav{width:100%}
+  body.sidebar-collapsed main{margin-left:0}
+  body.sidebar-collapsed .nav-link{padding:8px 2px}
+  main{margin-left:0;padding:18px 14px 82px}
   .card{padding:16px}
   .page-header h2{font-size:26px}
   .tarifas-grid{grid-template-columns:repeat(2,1fr)}
