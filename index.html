@@ -577,12 +577,31 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
           <tr>
             <th>Fecha</th><th>Canal</th><th>Producto</th><th>SKU</th><th>Cant.</th>
             <th>Precio</th><th>N° Orden</th><th>Ítems orden</th><th>Comisión</th><th>Neto</th>
+            <th>Nota</th><th>Estado</th>
           </tr>
         </thead>
         <tbody id="ventasBelgranoBody">
-          <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>
+          <tr><td colspan="12" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="add-row-form">
+      <div class="add-field"><label>FECHA</label><input type="datetime-local" id="vbAddFecha"></div>
+      <div class="add-field"><label>CANAL</label>
+        <select id="vbAddCanal">
+          <option value="web">Web</option>
+          <option value="ml">ML</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="add-field"><label>PRODUCTO</label><input type="text" id="vbAddProducto" placeholder="Título"></div>
+      <div class="add-field"><label>SKU</label><input type="text" id="vbAddSku" style="width:120px"></div>
+      <div class="add-field"><label>CANT.</label><input type="number" id="vbAddCantidad" value="1" min="1" style="width:70px"></div>
+      <div class="add-field"><label>PRECIO</label><input type="number" id="vbAddPrecio" style="width:100px"></div>
+      <div class="add-field"><label>N° ORDEN</label><input type="text" id="vbAddOrden" style="width:120px"></div>
+      <div class="add-field"><label>NOTA</label><input type="text" id="vbAddNota" style="width:160px"></div>
+      <button class="btn-add-row" onclick="addVentaBelgranoManual()">+ Agregar línea</button>
     </div>
   </div>
 </div>
@@ -1703,6 +1722,55 @@ function fmtFechaHora(iso){
   return d.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
+function escHtml(s){
+  return (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function patchVentaBelgrano(id,fields){
+  try{
+    await supa.patch('ventas_belgrano',id,fields);
+    loadVentasBelgrano();
+  }catch(e){
+    toast('Error guardando: '+e.message,'error');
+  }
+}
+
+function setVentaEstado(id,nuevo){
+  patchVentaBelgrano(id,{estado:nuevo});
+}
+
+function saveVentaNota(id,input){
+  patchVentaBelgrano(id,{nota:input.value.trim()||null});
+}
+
+async function addVentaBelgranoManual(){
+  const producto=document.getElementById('vbAddProducto').value.trim();
+  if(!producto){toast('Falta el nombre del producto','error');return}
+  const fecha=document.getElementById('vbAddFecha').value;
+  const precio=document.getElementById('vbAddPrecio').value;
+  try{
+    await supa.post('ventas_belgrano',{
+      title:producto,
+      sku:document.getElementById('vbAddSku').value.trim()||null,
+      quantity:+document.getElementById('vbAddCantidad').value||1,
+      price:precio?+precio:null,
+      channel:document.getElementById('vbAddCanal').value,
+      order_reference:document.getElementById('vbAddOrden').value.trim()||null,
+      sold_at:fecha?new Date(fecha).toISOString():new Date().toISOString(),
+      warehouse:'Belgrano',
+      source:'manual',
+      estado:'pendiente',
+      nota:document.getElementById('vbAddNota').value.trim()||null,
+    });
+    ['vbAddProducto','vbAddSku','vbAddPrecio','vbAddOrden','vbAddNota'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('vbAddCantidad').value=1;
+    toast('Línea agregada');
+    loadVentasBelgrano();
+  }catch(e){
+    toast('Error agregando línea: '+e.message,'error');
+  }
+}
+
 async function loadVentasBelgrano(){
   const dot=document.getElementById('sync-ventas');
   if(dot)dot.className='sync-dot loading';
@@ -1736,21 +1804,37 @@ async function loadVentasBelgrano(){
     document.getElementById('vb-neto').textContent='$'+Math.round(netoMl).toLocaleString('es-AR');
 
     if(!rows.length){
-      body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">Sin ventas en los últimos 7 días.</td></tr>';
+      body.innerHTML='<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--muted)">Sin ventas en los últimos 7 días.</td></tr>';
     } else {
-      body.innerHTML=rows.map(r=>`
-        <tr>
+      const canalStyle={
+        ml:'background:rgba(96,165,250,.15);color:var(--c1)',
+        web:'background:rgba(74,222,128,.15);color:var(--c2)',
+        otro:'background:rgba(136,136,150,.15);color:var(--muted2)',
+      };
+      body.innerHTML=rows.map(r=>{
+        const rowBg = r.estado==='confirmado' ? 'background:rgba(74,222,128,.06)'
+          : r.estado==='no_esta' ? 'background:rgba(248,113,113,.06)' : '';
+        const packBadge = (r.is_multi_item && r.pack_id)
+          ? `<br><span style="font-size:10px;color:var(--muted)" title="Mismo pedido de ML que otras filas con este número">paq. ${escHtml(r.pack_id)}</span>` : '';
+        return `
+        <tr style="${rowBg}">
           <td>${fmtFechaHora(r.sold_at)}</td>
-          <td><span class="zbadge" style="${r.channel==='ml'?'background:rgba(96,165,250,.15);color:var(--c1)':'background:rgba(74,222,128,.15);color:var(--c2)'}">${r.channel==='ml'?'ML':'WEB'}</span></td>
-          <td title="${r.title||''}">${r.title||'—'}</td>
-          <td>${r.sku||'—'}</td>
-          <td>${r.quantity??'—'}</td>
+          <td><span class="zbadge" style="${canalStyle[r.channel]||canalStyle.otro}">${(r.channel||'otro').toUpperCase()}</span>${r.source==='manual'?'<br><span style="font-size:10px;color:var(--muted)">manual</span>':''}</td>
+          <td title="${escHtml(r.title)}">${escHtml(r.title)||'—'}</td>
+          <td>${escHtml(r.sku)||'—'}</td>
+          <td>${r.quantity>1?`<span style="color:var(--c3);font-weight:700">${r.quantity}</span>`:(r.quantity??'—')}</td>
           <td>${r.price?'$'+Math.round(r.price).toLocaleString('es-AR'):'—'}</td>
-          <td>${r.order_reference||'—'}</td>
+          <td>${escHtml(r.order_reference)||'—'}${packBadge}</td>
           <td>${r.channel!=='ml'?'—':(r.is_multi_item?`<span style="color:var(--c3)">Paquete x${r.items_in_order}</span>`:(r.items_in_order??'—'))}</td>
-          <td>${r.channel==='ml'&&r.is_multi_item===false&&r.commission?'-$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR'):(r.is_multi_item?'—':'—')}</td>
+          <td>${r.channel==='ml'&&r.is_multi_item===false&&r.commission?'-$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR'):'—'}</td>
           <td class="val-cell">${r.channel==='ml'&&r.is_multi_item===false&&r.net_amount?'$'+Math.round(r.net_amount).toLocaleString('es-AR'):(r.is_multi_item?'<span title="Venta de varios items, no se puede prorratear la comisión por producto" style="color:var(--muted)">— (paquete)</span>':'—')}</td>
-        </tr>`).join('');
+          <td class="notes-cell"><input type="text" value="${escHtml(r.nota)}" placeholder="—" onchange="saveVentaNota(${r.id},this)"></td>
+          <td style="white-space:nowrap">
+            <button title="Confirmado" onclick="setVentaEstado(${r.id},'${r.estado==='confirmado'?'pendiente':'confirmado'}')" style="border:1px solid ${r.estado==='confirmado'?'var(--c2)':'var(--border)'};background:${r.estado==='confirmado'?'rgba(74,222,128,.2)':'var(--s2)'};color:${r.estado==='confirmado'?'var(--c2)':'var(--muted2)'};border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:4px">✓</button>
+            <button title="No está" onclick="setVentaEstado(${r.id},'${r.estado==='no_esta'?'pendiente':'no_esta'}')" style="border:1px solid ${r.estado==='no_esta'?'var(--unk)':'var(--border)'};background:${r.estado==='no_esta'?'rgba(248,113,113,.2)':'var(--s2)'};color:${r.estado==='no_esta'?'var(--unk)':'var(--muted2)'};border-radius:5px;padding:3px 8px;cursor:pointer">✕</button>
+          </td>
+        </tr>`;
+      }).join('');
     }
     if(dot)dot.className='sync-dot ok';
   }catch(e){
