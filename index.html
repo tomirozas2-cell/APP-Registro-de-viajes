@@ -37,6 +37,7 @@ nav{width:220px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .nav-bottom{padding:10px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);letter-spacing:1px;text-align:center}
 main{margin-left:220px;flex:1;padding:32px 36px 80px;max-width:1200px}
+body:has(#panel-ventas.active) main{max-width:1800px}
 
 /* PANELS */
 .panel{display:none}
@@ -557,7 +558,7 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
   <div id="ventasSessionWarning" style="display:none;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;color:var(--unk);font-size:13px"></div>
 
   <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
-    <div class="stat"><div class="stat-val" id="vb-total" style="color:var(--text)">—</div><div class="stat-lbl">Ventas (7 días)</div></div>
+    <div class="stat"><div class="stat-val" id="vb-total" style="color:var(--text)">—</div><div class="stat-lbl" id="vb-total-lbl">Ventas (24 hs)</div></div>
     <div class="stat"><div class="stat-val" id="vb-ml" style="color:var(--c1)">—</div><div class="stat-lbl">MercadoLibre</div></div>
     <div class="stat"><div class="stat-val" id="vb-web" style="color:var(--c2)">—</div><div class="stat-lbl">Web</div></div>
     <div class="stat"><div class="stat-val" id="vb-neto" style="color:var(--c3)">—</div><div class="stat-lbl">Neto ML cobrado</div></div>
@@ -566,12 +567,17 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
   <div class="card">
     <div class="card-title">
       <span class="dot"></span> ÚLTIMAS VENTAS
-      <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span style="margin-left:auto;display:flex;gap:14px;align-items:center">
+        <span class="zone-tabs" style="margin:0;padding:3px">
+          <button class="zone-tab vb-range active" data-h="24" onclick="setVbRange(24,this)">24 HS</button>
+          <button class="zone-tab vb-range" data-h="168" onclick="setVbRange(168,this)">7 DÍAS</button>
+          <button class="zone-tab vb-range" data-h="720" onclick="setVbRange(720,this)">30 DÍAS</button>
+        </span>
         <span id="vb-lastsync" style="font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none"></span>
         <button class="btn btn-sm" onclick="loadVentasBelgrano()">↻ Actualizar</button>
       </span>
     </div>
-    <div class="tbl-wrap" style="max-height:520px">
+    <div class="tbl-wrap" style="max-height:calc(100vh - 300px)">
       <table>
         <thead>
           <tr>
@@ -587,7 +593,6 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
     </div>
 
     <div class="add-row-form">
-      <div class="add-field"><label>FECHA</label><input type="datetime-local" id="vbAddFecha"></div>
       <div class="add-field"><label>CANAL</label>
         <select id="vbAddCanal">
           <option value="web">Web</option>
@@ -1746,7 +1751,6 @@ function saveVentaNota(id,input){
 async function addVentaBelgranoManual(){
   const producto=document.getElementById('vbAddProducto').value.trim();
   if(!producto){toast('Falta el nombre del producto','error');return}
-  const fecha=document.getElementById('vbAddFecha').value;
   const precio=document.getElementById('vbAddPrecio').value;
   try{
     await supa.post('ventas_belgrano',{
@@ -1756,7 +1760,7 @@ async function addVentaBelgranoManual(){
       price:precio?+precio:null,
       channel:document.getElementById('vbAddCanal').value,
       order_reference:document.getElementById('vbAddOrden').value.trim()||null,
-      sold_at:fecha?new Date(fecha).toISOString():new Date().toISOString(),
+      sold_at:new Date().toISOString(),
       warehouse:'Belgrano',
       source:'manual',
       estado:'pendiente',
@@ -1769,6 +1773,17 @@ async function addVentaBelgranoManual(){
   }catch(e){
     toast('Error agregando línea: '+e.message,'error');
   }
+}
+
+let vbRangeHours=24;
+const vbRangeLabel={24:'24 hs',168:'7 días',720:'30 días'};
+
+function setVbRange(h,btn){
+  vbRangeHours=h;
+  document.querySelectorAll('.vb-range').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('vb-total-lbl').textContent='Ventas ('+vbRangeLabel[h]+')';
+  loadVentasBelgrano();
 }
 
 async function loadVentasBelgrano(){
@@ -1789,7 +1804,7 @@ async function loadVentasBelgrano(){
       document.getElementById('vb-lastsync').textContent='Última corrida: '+fmtFechaHora(status.last_run_at);
     }
 
-    const since=new Date(Date.now()-7*24*3600*1000).toISOString();
+    const since=new Date(Date.now()-vbRangeHours*3600*1000).toISOString();
     const rows=await supa.get('ventas_belgrano',`sold_at=gte.${since}&order=sold_at.desc&limit=500`);
 
     const totalMl=rows.filter(r=>r.channel==='ml').length;
@@ -1804,7 +1819,7 @@ async function loadVentasBelgrano(){
     document.getElementById('vb-neto').textContent='$'+Math.round(netoMl).toLocaleString('es-AR');
 
     if(!rows.length){
-      body.innerHTML='<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--muted)">Sin ventas en los últimos 7 días.</td></tr>';
+      body.innerHTML=`<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--muted)">Sin ventas en las últimas ${vbRangeLabel[vbRangeHours]}.</td></tr>`;
     } else {
       const canalStyle={
         ml:'background:rgba(96,165,250,.15);color:var(--c1)',
