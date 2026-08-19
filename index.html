@@ -601,7 +601,12 @@ tbody td{padding:7px 11px;font-family:'DM Mono',monospace;font-size:11px;color:#
         </select>
       </div>
       <div class="add-field"><label>PRODUCTO</label><input type="text" id="vbAddProducto" placeholder="Título"></div>
-      <div class="add-field"><label>SKU</label><input type="text" id="vbAddSku" style="width:120px"></div>
+      <div class="add-field"><label>SKU</label>
+        <div style="display:flex;gap:4px">
+          <input type="text" id="vbAddSku" style="width:110px" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarProductoEntelequia()}">
+          <button type="button" class="btn btn-sm" onclick="buscarProductoEntelequia()" title="Buscar por SKU/ISBN en Entelequia">🔍</button>
+        </div>
+      </div>
       <div class="add-field"><label>CANT.</label><input type="number" id="vbAddCantidad" value="1" min="1" style="width:70px"></div>
       <div class="add-field"><label>PRECIO</label><input type="number" id="vbAddPrecio" style="width:100px"></div>
       <div class="add-field"><label>N° ORDEN</label><input type="text" id="vbAddOrden" style="width:120px"></div>
@@ -1746,6 +1751,25 @@ function setVentaEstado(id,nuevo){
 
 function saveVentaNota(id,input){
   patchVentaBelgrano(id,{nota:input.value.trim()||null});
+}
+
+async function buscarProductoEntelequia(){
+  const sku=document.getElementById('vbAddSku').value.trim();
+  if(!sku){toast('Escribí un SKU/ISBN primero','error');return}
+  try{
+    const r=await fetch(`${SUPA_URL}/functions/v1/buscar-producto?q=${encodeURIComponent(sku)}`,{
+      headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}
+    });
+    if(!r.ok)throw new Error(await r.text());
+    const data=await r.json();
+    const p=data.products&&data.products[0];
+    if(!p){toast('No se encontró ningún producto con ese SKU/ISBN','error');return}
+    document.getElementById('vbAddProducto').value=p.title;
+    if(p.price)document.getElementById('vbAddPrecio').value=Math.round(+p.price);
+    toast('Encontrado: '+p.title);
+  }catch(e){
+    toast('Error buscando producto: '+e.message,'error');
+  }
 }
 
 async function addVentaBelgranoManual(){
