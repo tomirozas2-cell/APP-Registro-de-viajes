@@ -20,6 +20,7 @@
   --unk:#f87171; --adf:#f97316; --lucho:#a78bfa; --paid:#4ade80;
   --tbl-fg:#ccc; --hover-tint:rgba(255,255,255,.03); --hover-tint2:rgba(255,255,255,.04);
   --badge-ml-fg:#bcdcff; --badge-web-fg:#c3f7d3; --badge-otro-fg:#ffe4a8; --badge-amt-fg:#ffcf5c; --badge-ship-fg:#7dd3fc;
+  --row-sep:rgba(255,255,255,.04); --row-ok-bg:rgba(74,222,128,.14); --row-bad-bg:rgba(248,113,113,.14);
 }
 body.light {
   --bg:#f3f3f5; --s1:#ffffff; --s2:#f1f1f4; --s3:#e7e7ec;
@@ -27,6 +28,7 @@ body.light {
   --text:#17171b; --muted:#9a9aa6; --muted2:#54545f;
   --tbl-fg:#33333a; --hover-tint:rgba(0,0,0,.035); --hover-tint2:rgba(0,0,0,.045);
   --badge-ml-fg:#1d4ed8; --badge-web-fg:#15803d; --badge-otro-fg:#92400e; --badge-amt-fg:#92400e; --badge-ship-fg:#0369a1;
+  --row-sep:rgba(0,0,0,.14); --row-ok-bg:rgba(22,163,74,.20); --row-bad-bg:rgba(220,38,38,.20);
 }
 body.light input[type=date]::-webkit-calendar-picker-indicator{filter:none}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -161,7 +163,7 @@ select.field-select option{background:var(--s2)}
 .tbl-wrap{border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:340px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 thead th{background:var(--s2);padding:7px 9px;text-align:left;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2}
-tbody tr{border-bottom:1px solid var(--hover-tint2);transition:background .1s}
+tbody tr{border-bottom:1px solid var(--row-sep);transition:background .1s}
 tbody tr:hover{background:var(--hover-tint)}
 tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tbl-fg);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -378,6 +380,7 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
 #scannerRegion{width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:220px}
 #scannerRegion video{border-radius:12px}
 .scanner-status{font-size:12px;color:var(--muted2);text-align:center;margin:12px 0}
+.scanner-multi-count{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--c2);margin:-4px 0 12px}
 
 /* MERCADERIA SUELTA: pensada para usar comoda con tablet (targets grandes) */
 #panel-mercaderia .add-row-form{gap:14px;padding:18px}
@@ -401,6 +404,17 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
   #panel-mercaderia table{font-size:13px}
   #panel-mercaderia tbody td{padding:10px 10px}
   #panel-mercaderia .notes-cell input{width:100%!important}
+}
+/* En desktop la version "comoda tablet" de arriba ocupa demasiado alto y le
+   deja poco lugar a la lista de movimientos: la compactamos solo a partir
+   de este ancho, la version tablet (<=1024px) queda intacta. */
+@media (min-width:1025px){
+  #panel-mercaderia .add-row-form{gap:8px;padding:10px 12px}
+  #panel-mercaderia .add-field label{font-size:10px}
+  #panel-mercaderia .add-field input[type=text],#panel-mercaderia .add-field input[type=number]{font-size:13px;padding:7px 9px;border-radius:6px;min-height:0}
+  #panel-mercaderia .tipo-pill{padding:7px 10px;font-size:13px;min-height:0}
+  #panel-mercaderia .btn-add-row{padding:8px 16px;font-size:13px;min-height:0}
+  #panel-mercaderia .btn-scan{min-height:32px;padding:0 10px;font-size:12px}
 }
 
 /* Grid footer totals row */
@@ -817,7 +831,7 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
         <div style="display:flex;gap:6px">
           <input type="text" id="mbAddSku" style="width:110px" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarProductoMercaderia()}" onpaste="setTimeout(buscarProductoMercaderia,0)">
           <button type="button" class="btn btn-sm" onclick="buscarProductoMercaderia()" title="Buscar por SKU/ISBN en la web">🔍</button>
-          <button type="button" class="btn-scan" onclick="openBarcodeScanner('mbAddSku')" title="Escanear código de barras con la cámara">📷</button>
+          <button type="button" class="btn-scan" onclick="openBarcodeScannerMulti()" title="Escanear varios códigos seguidos: cada uno se anota solo como movimiento">📷</button>
         </div>
       </div>
       <div class="add-field"><label>PRODUCTO</label><input type="text" id="mbAddProducto" placeholder="Título" style="width:220px"></div>
@@ -942,11 +956,12 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
 <!-- MODAL ESCANER DE CODIGO DE BARRAS -->
 <div class="modal-overlay scanner-modal" id="scannerModal">
   <div class="modal-box">
-    <div class="modal-title">📷 ESCANEAR CÓDIGO</div>
+    <div class="modal-title" id="scannerModalTitle">📷 ESCANEAR CÓDIGO</div>
     <div id="scannerRegion"></div>
     <div class="scanner-status" id="scannerStatus">Iniciando cámara...</div>
+    <div class="scanner-multi-count" id="scannerMultiCount" style="display:none">0 escaneados</div>
     <div class="modal-actions">
-      <button class="btn-modal-cancel" onclick="closeBarcodeScanner()">Cancelar</button>
+      <button class="btn-modal-cancel" id="scannerCancelBtn" onclick="closeBarcodeScanner()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -2097,9 +2112,9 @@ function saveVentaNota(id,input){
   patchVentaBelgrano(id,{nota:input.value.trim()||null});
 }
 
-async function buscarProductoPorSku(skuId,productoId,precioId){
+async function buscarProductoPorSku(skuId,productoId,precioId,silent){
   const sku=document.getElementById(skuId).value.trim();
-  if(!sku){toast('Escribí un SKU/ISBN primero','error');return}
+  if(!sku){if(!silent)toast('Escribí un SKU/ISBN primero','error');return}
   const productoEl=document.getElementById(productoId);
   const prevPlaceholder=productoEl.placeholder;
   productoEl.placeholder='🔎 buscando...';
@@ -2111,12 +2126,12 @@ async function buscarProductoPorSku(skuId,productoId,precioId){
     if(!r.ok)throw new Error(await r.text());
     const data=await r.json();
     const p=data.products&&data.products[0];
-    if(!p){toast('No se encontró ningún producto con ese SKU/ISBN','error');return}
+    if(!p){if(!silent)toast('No se encontró ningún producto con ese SKU/ISBN','error');return}
     productoEl.value=p.title;
     if(p.price)document.getElementById(precioId).value=Math.round(+p.price);
-    toast('Encontrado: '+p.title);
+    if(!silent)toast('Encontrado: '+p.title);
   }catch(e){
-    toast('Error buscando producto: '+e.message,'error');
+    if(!silent)toast('Error buscando producto: '+e.message,'error');
   }finally{
     productoEl.disabled=false;
     productoEl.placeholder=prevPlaceholder;
@@ -2127,14 +2142,41 @@ async function buscarProductoMercaderia(){return buscarProductoPorSku('mbAddSku'
 
 // ══════════════════════════════════════
 // ESCANER DE CODIGO DE BARRAS (camara)
+// modo 'single': lee un codigo, lo vuelca en un input y cierra.
+// modo 'multi' (Mercadería Suelta): queda la camara abierta y cada codigo
+// leido se anota como movimiento automaticamente, armando la lista.
 // ══════════════════════════════════════
 let scannerInstance=null;
 let scannerTargetInputId=null;
 let scannerOnResult=null;
+let scannerMode='single';
+let scannerMultiCount=0;
+let scannerMultiLastCode=null;
+let scannerMultiLastTime=0;
+let scannerMultiBusy=false;
+const SCANNER_MULTI_COOLDOWN_MS=4000;
 
 async function openBarcodeScanner(targetInputId,onResult){
+  scannerMode='single';
   scannerTargetInputId=targetInputId;
   scannerOnResult=onResult||null;
+  await startScanner();
+}
+
+async function openBarcodeScannerMulti(){
+  scannerMode='multi';
+  scannerMultiCount=0;
+  scannerMultiLastCode=null;
+  scannerMultiLastTime=0;
+  document.getElementById('scannerModalTitle').textContent='📷 ESCANEO CONTINUO';
+  document.getElementById('scannerCancelBtn').textContent='Listo ✓';
+  const countEl=document.getElementById('scannerMultiCount');
+  countEl.style.display='block';
+  countEl.textContent='0 escaneados';
+  await startScanner();
+}
+
+async function startScanner(){
   const statusEl=document.getElementById('scannerStatus');
   document.getElementById('scannerModal').classList.add('open');
   statusEl.textContent='Iniciando cámara...';
@@ -2154,7 +2196,7 @@ async function openBarcodeScanner(targetInputId,onResult){
       onBarcodeDetected,
       ()=>{}
     );
-    statusEl.textContent='Apuntá la cámara al código de barras...';
+    statusEl.textContent=scannerMode==='multi'?'Apuntá la cámara a cada código, uno tras otro...':'Apuntá la cámara al código de barras...';
   }catch(e){
     statusEl.textContent='⚠ No se pudo abrir la cámara ('+(e.message||e)+'). Revisá los permisos, o escribí el código a mano.';
   }
@@ -2162,8 +2204,12 @@ async function openBarcodeScanner(targetInputId,onResult){
 
 function onBarcodeDetected(decodedText){
   const code=(decodedText||'').trim();
-  closeBarcodeScanner();
   if(!code)return;
+  if(scannerMode==='multi'){
+    handleMultiScan(code);
+    return;
+  }
+  closeBarcodeScanner();
   if(scannerOnResult){
     scannerOnResult(code);
   } else if(scannerTargetInputId){
@@ -2177,13 +2223,50 @@ function onBarcodeDetected(decodedText){
   }
 }
 
+async function handleMultiScan(code){
+  const now=Date.now();
+  if(scannerMultiBusy)return;
+  if(code===scannerMultiLastCode && (now-scannerMultiLastTime)<SCANNER_MULTI_COOLDOWN_MS)return;
+  scannerMultiBusy=true;
+  scannerMultiLastCode=code;
+  scannerMultiLastTime=now;
+  const statusEl=document.getElementById('scannerStatus');
+  statusEl.textContent='🔎 Buscando '+code+'...';
+  document.getElementById('mbAddSku').value=code;
+  document.getElementById('mbAddProducto').value='';
+  document.getElementById('mbAddPrecio').value='';
+  try{
+    await buscarProductoPorSku('mbAddSku','mbAddProducto','mbAddPrecio',true);
+    const nombre=document.getElementById('mbAddProducto').value.trim();
+    if(!nombre){
+      statusEl.textContent='⚠ No se encontró '+code+' — seguí escaneando.';
+    } else {
+      await addMercaderiaBelgrano(true);
+      scannerMultiCount++;
+      const countEl=document.getElementById('scannerMultiCount');
+      if(countEl)countEl.textContent=scannerMultiCount+' escaneado'+(scannerMultiCount===1?'':'s');
+      statusEl.textContent='✓ '+nombre+' — seguí escaneando o tocá "Listo".';
+    }
+  }catch(e){
+    statusEl.textContent='⚠ Error con '+code+': '+(e.message||e);
+  }finally{
+    scannerMultiBusy=false;
+  }
+}
+
 function closeBarcodeScanner(){
   document.getElementById('scannerModal').classList.remove('open');
+  document.getElementById('scannerMultiCount').style.display='none';
+  document.getElementById('scannerModalTitle').textContent='📷 ESCANEAR CÓDIGO';
+  document.getElementById('scannerCancelBtn').textContent='Cancelar';
+  const wasMulti=scannerMode==='multi';
+  scannerMode='single';
   const inst=scannerInstance;
   scannerInstance=null;
   if(inst){
     inst.stop().then(()=>inst.clear()).catch(()=>{});
   }
+  if(wasMulti&&scannerMultiCount>0)loadMercaderiaBelgrano();
 }
 
 async function addVentaBelgranoManual(){
@@ -2334,8 +2417,8 @@ function renderVentasBelgrano(){
       };
       const packCounts=packCountsByChannel(vbAllRows);
       body.innerHTML=rows.map(r=>{
-        const rowBg = r.estado==='confirmado' ? 'background:rgba(74,222,128,.14);border-left:3px solid var(--c2)'
-          : r.estado==='no_esta' ? 'background:rgba(248,113,113,.14);border-left:3px solid var(--unk)' : 'border-left:3px solid transparent';
+        const rowBg = r.estado==='confirmado' ? 'background:var(--row-ok-bg);border-left:3px solid var(--c2)'
+          : r.estado==='no_esta' ? 'background:var(--row-bad-bg);border-left:3px solid var(--unk)' : 'border-left:3px solid transparent';
         const packBadge = (r.is_multi_item && r.pack_id)
           ? `<br><span style="font-size:10px;color:var(--c3);font-weight:600" title="Mismo pedido de ML que otras filas con este número">paq. ${escHtml(r.pack_id)}</span>` : '';
         return `
@@ -2397,9 +2480,9 @@ function setMbRangeCustom(){
   loadMercaderiaBelgrano();
 }
 
-async function addMercaderiaBelgrano(){
+async function addMercaderiaBelgrano(silent){
   const producto=document.getElementById('mbAddProducto').value.trim();
-  if(!producto){toast('Falta el nombre del producto','error');return}
+  if(!producto){if(!silent)toast('Falta el nombre del producto','error');return}
   const precio=document.getElementById('mbAddPrecio').value;
   try{
     await supa.post('mercaderia_belgrano',{
@@ -2413,7 +2496,7 @@ async function addMercaderiaBelgrano(){
     });
     ['mbAddSku','mbAddProducto','mbAddPrecio','mbAddNota'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('mbAddCantidad').value=1;
-    toast('Movimiento anotado');
+    if(!silent)toast('Movimiento anotado');
     loadMercaderiaBelgrano();
   }catch(e){
     toast('Error anotando movimiento: '+e.message,'error');
