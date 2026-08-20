@@ -136,6 +136,8 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:#c
 .pack-solo{background:var(--c1);color:#04101f;box-shadow:0 0 0 1px rgba(96,165,250,.9),0 0 12px rgba(96,165,250,.65)}
 .pack-multi{background:var(--lucho);color:#170c33;box-shadow:0 0 0 1px rgba(167,139,250,.9),0 0 12px rgba(167,139,250,.5)}
 .pack-send{background:rgba(249,115,22,.16);color:var(--adf);box-shadow:inset 0 0 0 1.5px rgba(249,115,22,.5)}
+.pack-pickup{background:#2dd4bf;color:#022e2b;box-shadow:0 0 0 1px rgba(45,212,191,.9),0 0 12px rgba(45,212,191,.55)}
+.pack-pickup-partial{background:rgba(244,114,182,.18);color:var(--caba);box-shadow:inset 0 0 0 1.5px rgba(244,114,182,.55)}
 .pack-none{color:var(--muted);font-size:10px}
 .zbadge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.5px;font-family:'DM Sans',sans-serif}
 .zCABA{background:rgba(244,114,182,.15);color:var(--caba)}.zC1{background:rgba(96,165,250,.15);color:var(--c1)}.zC2{background:rgba(74,222,128,.15);color:var(--c2)}.zC3{background:rgba(251,191,36,.15);color:var(--c3)}.zUNK{background:rgba(248,113,113,.15);color:var(--unk)}
@@ -687,6 +689,8 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:#c
       <span><span class="pack-action pack-solo" style="padding:3px 6px;font-size:9px">📦 ARMAR<span class="pa-sub" style="font-size:7.5px">PAQUETE</span></span> venta de 1 solo producto: armar su paquete</span>
       <span><span class="pack-action pack-multi" style="padding:3px 6px;font-size:9px">📦 ARMAR<span class="pa-sub" style="font-size:7.5px">×N</span></span> pedido de varios productos, todos salen de Belgrano: armar el paquete completo</span>
       <span><span class="pack-action pack-send" style="padding:3px 6px;font-size:9px">↗ MANDAR<span class="pa-sub" style="font-size:7.5px">1/N</span></span> solo este producto sale de Belgrano; el resto del pedido va aparte: mandarlo suelto</span>
+      <span><span class="pack-action pack-pickup" style="padding:3px 6px;font-size:9px">🏬 RETIRA<span class="pa-sub" style="font-size:7.5px">EN BELGRANO</span></span> venta web con retiro en sucursal Belgrano: separarla, el cliente la retira ahí</span>
+      <span><span class="pack-action pack-pickup-partial" style="padding:3px 6px;font-size:9px">📥 RETIRO<span class="pa-sub" style="font-size:7.5px">+N de otro dep.</span></span> retiro en Belgrano con productos de otro depósito: van a llegar más para juntar el pedido</span>
     </div>
     <div class="tbl-wrap" style="max-height:calc(100vh - 360px)">
       <table>
@@ -2218,28 +2222,39 @@ function filterVbRows(){
   );
 }
 
-// Cuenta cuantas filas de un mismo pedido de ML (mismo pack_id/orden) salieron
-// de Belgrano, para distinguir "armar el paquete completo aca" de "mandar
-// suelto porque el resto del paquete sale de otro deposito".
-function mlPackCounts(rows){
+// Cuenta cuantas filas de un mismo pedido (ML: mismo pack_id/orden: venta
+// web: mismo pedido web) salieron de Belgrano, para distinguir "se arma/
+// retira completo aca" de "falta el resto, que sale de otro deposito".
+// Se separa por canal para no mezclar un numero de orden de ML con un id
+// de pedido web que coincida por casualidad.
+function packCountsByChannel(rows){
   const m=new Map();
   rows.forEach(r=>{
-    if(r.channel!=='ml')return;
-    const key=r.pack_id||r.order_reference;
-    if(!key)return;
+    if(r.channel!=='ml' && r.channel!=='web')return;
+    const key=r.channel+':'+(r.pack_id||r.order_reference);
+    if(!r.pack_id && !r.order_reference)return;
     m.set(key,(m.get(key)||0)+1);
   });
   return m;
 }
 
 function itemsActionCell(r,packCounts){
-  if(r.channel!=='ml')return '<span class="pack-none">—</span>';
-  if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
-  if(!r.is_multi_item)return '<span class="pack-action pack-solo">📦 ARMAR<span class="pa-sub">PAQUETE</span></span>';
-  const key=r.pack_id||r.order_reference;
-  const fromBelgrano=packCounts.get(key)||1;
-  if(fromBelgrano>=r.items_in_order)return `<span class="pack-action pack-multi">📦 ARMAR<span class="pa-sub">×${r.items_in_order}</span></span>`;
-  return `<span class="pack-action pack-send">↗ MANDAR<span class="pa-sub">${fromBelgrano}/${r.items_in_order}</span></span>`;
+  if(r.channel==='ml'){
+    if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
+    if(!r.is_multi_item)return '<span class="pack-action pack-solo">📦 ARMAR<span class="pa-sub">PAQUETE</span></span>';
+    const fromBelgrano=packCounts.get('ml:'+(r.pack_id||r.order_reference))||1;
+    if(fromBelgrano>=r.items_in_order)return `<span class="pack-action pack-multi">📦 ARMAR<span class="pa-sub">×${r.items_in_order}</span></span>`;
+    return `<span class="pack-action pack-send">↗ MANDAR<span class="pa-sub">${fromBelgrano}/${r.items_in_order}</span></span>`;
+  }
+  if(r.channel==='web'){
+    if((r.ship_method||'').trim()!=='Retiro en sucursal Belgrano')return '<span class="pack-none">—</span>';
+    if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
+    if(!r.is_multi_item)return '<span class="pack-action pack-pickup">🏬 RETIRA<span class="pa-sub">EN BELGRANO</span></span>';
+    const fromBelgrano=packCounts.get('web:'+r.order_reference)||1;
+    if(fromBelgrano>=r.items_in_order)return `<span class="pack-action pack-pickup">🏬 RETIRA<span class="pa-sub">×${r.items_in_order} ACÁ</span></span>`;
+    return `<span class="pack-action pack-pickup-partial">📥 RETIRO<span class="pa-sub">+${r.items_in_order-fromBelgrano} de otro dep.</span></span>`;
+  }
+  return '<span class="pack-none">—</span>';
 }
 
 function renderVentasBelgrano(){
@@ -2255,7 +2270,7 @@ function renderVentasBelgrano(){
         web:'background:rgba(74,222,128,.28);color:#c3f7d3;box-shadow:inset 0 0 0 1px rgba(74,222,128,.5)',
         otro:'background:rgba(251,191,36,.25);color:#ffe4a8;box-shadow:inset 0 0 0 1px rgba(251,191,36,.5)',
       };
-      const packCounts=mlPackCounts(vbAllRows);
+      const packCounts=packCountsByChannel(vbAllRows);
       body.innerHTML=rows.map(r=>{
         const rowBg = r.estado==='confirmado' ? 'background:rgba(74,222,128,.14);border-left:3px solid var(--c2)'
           : r.estado==='no_esta' ? 'background:rgba(248,113,113,.14);border-left:3px solid var(--unk)' : 'border-left:3px solid transparent';
