@@ -139,6 +139,11 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:#c
 .pack-pickup{background:#2dd4bf;color:#022e2b;box-shadow:0 0 0 1px rgba(45,212,191,.9),0 0 12px rgba(45,212,191,.55)}
 .pack-pickup-partial{background:rgba(244,114,182,.18);color:var(--caba);box-shadow:inset 0 0 0 1.5px rgba(244,114,182,.55)}
 .pack-none{color:var(--muted);font-size:10px}
+.qty-badge{display:inline-block;background:#fbbf24;color:#1a1300;font-weight:900;font-size:14px;padding:3px 11px;border-radius:20px;box-shadow:0 0 0 1.5px rgba(251,191,36,.95),0 0 12px rgba(251,191,36,.75)}
+.vb-legend{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.legend-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:2px}
+.legend-chip{padding:3px 8px;font-size:10px;cursor:help}
+.legend-chip .pa-sub{display:none}
 .zbadge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.5px;font-family:'DM Sans',sans-serif}
 .zCABA{background:rgba(244,114,182,.15);color:var(--caba)}.zC1{background:rgba(96,165,250,.15);color:var(--c1)}.zC2{background:rgba(74,222,128,.15);color:var(--c2)}.zC3{background:rgba(251,191,36,.15);color:var(--c3)}.zUNK{background:rgba(248,113,113,.15);color:var(--unk)}
 .val-cell{font-weight:600;color:var(--text)!important}
@@ -682,15 +687,16 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:#c
           <button class="btn btn-sm" onclick="setVbRangeCustom()">Filtrar</button>
         </span>
         <span id="vb-lastsync" style="font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none"></span>
-        <button class="btn btn-sm" onclick="loadVentasBelgrano()">↻ Actualizar</button>
+        <button class="btn btn-sm" onclick="loadVentasBelgrano(true)">↻ Actualizar</button>
       </span>
     </div>
-    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--muted2)">
-      <span><span class="pack-action pack-solo" style="padding:3px 6px;font-size:9px">📦 ARMAR<span class="pa-sub" style="font-size:7.5px">PAQUETE</span></span> venta de 1 solo producto: armar su paquete</span>
-      <span><span class="pack-action pack-multi" style="padding:3px 6px;font-size:9px">📦 ARMAR<span class="pa-sub" style="font-size:7.5px">×N</span></span> pedido de varios productos, todos salen de Belgrano: armar el paquete completo</span>
-      <span><span class="pack-action pack-send" style="padding:3px 6px;font-size:9px">↗ MANDAR<span class="pa-sub" style="font-size:7.5px">1/N</span></span> solo este producto sale de Belgrano; el resto del pedido va aparte: mandarlo suelto</span>
-      <span><span class="pack-action pack-pickup" style="padding:3px 6px;font-size:9px">🏬 RETIRA<span class="pa-sub" style="font-size:7.5px">EN BELGRANO</span></span> venta web con retiro en sucursal Belgrano: separarla, el cliente la retira ahí</span>
-      <span><span class="pack-action pack-pickup-partial" style="padding:3px 6px;font-size:9px">📥 RETIRO<span class="pa-sub" style="font-size:7.5px">+N de otro dep.</span></span> retiro en Belgrano con productos de otro depósito: van a llegar más para juntar el pedido</span>
+    <div class="vb-legend">
+      <span class="legend-lbl">Acción:</span>
+      <span class="pack-action pack-solo legend-chip" title="Venta de 1 solo producto: armar su paquete">📦 1</span>
+      <span class="pack-action pack-multi legend-chip" title="Pedido de varios productos, todos salen de Belgrano: armar el paquete completo">📦 ×N</span>
+      <span class="pack-action pack-send legend-chip" title="Solo este producto sale de Belgrano; el resto del pedido va aparte: mandarlo suelto">↗ N/M</span>
+      <span class="pack-action pack-pickup legend-chip" title="Venta web con retiro en sucursal Belgrano: separarla, el cliente la retira ahí">🏬 retira</span>
+      <span class="pack-action pack-pickup-partial legend-chip" title="Retiro en Belgrano con productos de otro depósito: van a llegar más para juntar el pedido">📥 +N</span>
     </div>
     <div class="tbl-wrap" style="max-height:calc(100vh - 360px)">
       <table>
@@ -2181,7 +2187,7 @@ function setVbRangeCustom(){
   loadVentasBelgrano();
 }
 
-async function loadVentasBelgrano(){
+async function loadVentasBelgrano(manual=false){
   const dot=document.getElementById('sync-ventas');
   if(dot)dot.className='sync-dot loading';
   const warnEl=document.getElementById('ventasSessionWarning');
@@ -2204,10 +2210,12 @@ async function loadVentasBelgrano(){
     vbAllRows=await supa.get('ventas_belgrano',`sold_at=gte.${since}${untilFilter}&order=sold_at.desc&limit=500`);
     renderVentasBelgrano();
     if(dot)dot.className='sync-dot ok';
+    if(manual)toast('Actualizado');
   }catch(e){
     console.error(e);
     body.innerHTML='<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--unk)">Error cargando ventas.</td></tr>';
     if(dot)dot.className='sync-dot err';
+    if(manual)toast('No se pudo actualizar','error');
   }
 }
 
@@ -2282,7 +2290,7 @@ function renderVentasBelgrano(){
           <td><span class="zbadge" style="${canalStyle[r.channel]||canalStyle.otro};font-weight:700">${(r.channel||'otro').toUpperCase()}</span>${r.source==='manual'?'<br><span style="font-size:10px;color:var(--c3);font-weight:600">✎ manual</span>':''}</td>
           <td title="${escHtml(r.title)}" style="white-space:normal;max-width:260px">${escHtml(r.title)||'—'}</td>
           <td>${escHtml(r.sku)||'—'}</td>
-          <td>${r.quantity>1?`<span style="background:rgba(251,191,36,.25);color:#ffcf5c;font-weight:800;padding:1px 7px;border-radius:20px;box-shadow:inset 0 0 0 1px rgba(251,191,36,.5)">${r.quantity}</span>`:(r.quantity??'—')}</td>
+          <td>${r.quantity>1?`<span class="qty-badge">${r.quantity}</span>`:(r.quantity??'—')}</td>
           <td>${r.price?'$'+Math.round(r.price).toLocaleString('es-AR'):'—'}</td>
           <td>${escHtml(r.order_reference)||'—'}${packBadge}</td>
           <td style="text-align:center">${itemsActionCell(r,packCounts)}</td>
