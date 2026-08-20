@@ -705,7 +705,7 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:#c
         <thead>
           <tr>
             <th>Fecha</th><th>Canal</th><th style="min-width:190px">Producto</th><th>SKU</th><th>Cant.</th>
-            <th>Precio</th><th>N° Orden</th><th style="width:88px;text-align:center">Acción</th><th style="width:76px;text-align:right" title="Neto luego de restar la comisión de MercadoLibre">Neto ML</th>
+            <th>Precio</th><th>N° Orden</th><th style="width:88px;text-align:center">Acción</th><th style="width:76px;text-align:right" title="ML: neto luego de restar la comisión. Web: precio del producto.">Total</th>
             <th style="min-width:150px">Nota</th><th>Estado</th>
           </tr>
         </thead>
@@ -2299,7 +2299,7 @@ function renderVentasBelgrano(){
           <td>${r.price?'$'+Math.round(r.price).toLocaleString('es-AR'):'—'}</td>
           <td>${escHtml(r.order_reference)||'—'}${packBadge}</td>
           <td style="text-align:center">${itemsActionCell(r,packCounts)}</td>
-          <td class="val-cell" style="text-align:right">${r.channel==='ml'&&r.net_amount?'<span style="color:var(--c2);font-weight:800">$'+Math.round(r.net_amount).toLocaleString('es-AR')+'</span>'+(r.commission?'<br><span style="font-size:9px;color:var(--unk)">−$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR')+'</span>':'')+(r.is_multi_item?' <span style="font-size:9px;color:var(--muted)" title="Monto del paquete completo, no solo de este producto">📦</span>':''):'—'}</td>
+          <td class="val-cell" style="text-align:right">${r.channel==='ml'&&r.net_amount?'<span style="color:var(--c2);font-weight:800">$'+Math.round(r.net_amount).toLocaleString('es-AR')+'</span>'+(r.commission?'<br><span style="font-size:9px;color:var(--unk)">−$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR')+'</span>':'')+(r.is_multi_item?' <span style="font-size:9px;color:var(--muted)" title="Monto del paquete completo, no solo de este producto">📦</span>':''):(r.channel==='web'&&r.price?'<span style="color:var(--muted2);font-weight:700">$'+Math.round(r.price).toLocaleString('es-AR')+'</span>':'—')}</td>
           <td class="notes-cell"><input type="text" value="${escHtml(r.nota)}" placeholder="✎ nota..." onchange="saveVentaNota(${r.id},this)" style="background:var(--s2);border:1px solid var(--border2);border-radius:6px;padding:5px 7px;color:var(--text);width:140px"></td>
           <td style="white-space:nowrap">
             <button class="btn-estado-toggle" title="Marcar como confirmado" onclick="setVentaEstado(${r.id},'${r.estado==='confirmado'?'pendiente':'confirmado'}')" style="border:1.5px solid ${r.estado==='confirmado'?'#1fdb6b':'var(--border2)'};background:${r.estado==='confirmado'?'#1fdb6b':'var(--s2)'};color:${r.estado==='confirmado'?'#022b12':'var(--muted2)'};font-weight:800;border-radius:5px;padding:4px 9px;cursor:pointer;margin-right:4px;transition:all .15s;font-size:13px${r.estado==='confirmado'?';box-shadow:0 0 10px rgba(31,219,107,.6)':''}">✓</button>
