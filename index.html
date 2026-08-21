@@ -745,10 +745,10 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
     </div>
     <div class="vb-legend">
       <span class="legend-lbl">Acción:</span>
-      <span class="pack-action pack-solo legend-chip" title="Venta de 1 solo producto: armar su paquete">📦 1</span>
-      <span class="pack-action pack-multi legend-chip" title="Pedido de varios productos, todos salen de Belgrano: armar el paquete completo">📦 ×N</span>
-      <span class="pack-action pack-send legend-chip" title="Solo este producto sale de Belgrano; el resto del pedido va aparte: mandarlo suelto">↗ N/M</span>
-      <span class="pack-action pack-ship legend-chip" title="Venta web que se despacha (moto, correo, u otra sucursal): armarla y enviarla">📤 armar</span>
+      <span class="pack-action pack-solo legend-chip" title="Venta de 1 solo producto que tienen en Belgrano: armar su paquete">📦 1</span>
+      <span class="pack-action pack-multi legend-chip" title="Pedido de varios productos, todos los tienen en Belgrano: armar el paquete completo">📦 ×N</span>
+      <span class="pack-action pack-send legend-chip" title="No arman nada acá, solo mandan lo que tienen: o falta un resto del pedido que está en otro depósito (para juntar en destino), o el pedido entero va a otra sucursal (el armado/entrega final se hace allá)">↗ mandar</span>
+      <span class="pack-action pack-ship legend-chip" title="Venta web con envío (moto/correo) y el pedido completo sale de Belgrano: armarla y enviarla">📤 armar</span>
       <span class="pack-action pack-pickup legend-chip" title="Venta web con retiro en sucursal Belgrano: separarla, el cliente la retira ahí">🏬 retira</span>
       <span class="pack-action pack-pickup-partial legend-chip" title="Retiro en Belgrano con productos de otro depósito: van a llegar más para juntar el pedido">📥 +N</span>
     </div>
@@ -2390,14 +2390,27 @@ function itemsActionCell(r,packCounts){
   }
   if(r.channel==='web'){
     if(r.ship_method==null)return '<span class="pack-none">s/ detalle</span>';
-    if(r.ship_method.trim()!=='Retiro en sucursal Belgrano'){
-      return '<span class="pack-action pack-ship">📤 ARMAR<span class="pa-sub">Y ENVIAR</span></span>';
+    const shipMethod=r.ship_method.trim();
+    const retiroMatch=shipMethod.match(/^Retiro en sucursal (.+)$/i);
+    if(retiroMatch){
+      const sucursal=retiroMatch[1].trim();
+      if(sucursal.toLowerCase()!=='belgrano'){
+        // Retira en OTRA sucursal: Belgrano no arma nada, solo manda la
+        // mercadería para allá; el armado/entrega final lo hacen en destino.
+        return `<span class="pack-action pack-send">↗ MANDAR<span class="pa-sub">A ${escHtml(sucursal.toUpperCase())}</span></span>`;
+      }
+      if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
+      if(!r.is_multi_item)return '<span class="pack-action pack-pickup">🏬 RETIRA<span class="pa-sub">EN BELGRANO</span></span>';
+      const fromBelgrano=packCounts.get('web:'+r.order_reference)||1;
+      if(fromBelgrano>=r.items_in_order)return `<span class="pack-action pack-pickup">🏬 RETIRA<span class="pa-sub">×${r.items_in_order} ACÁ</span></span>`;
+      return `<span class="pack-action pack-pickup-partial">📥 RETIRO<span class="pa-sub">+${r.items_in_order-fromBelgrano} de otro dep.</span></span>`;
     }
-    if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
-    if(!r.is_multi_item)return '<span class="pack-action pack-pickup">🏬 RETIRA<span class="pa-sub">EN BELGRANO</span></span>';
+    // Envío (moto/correo/etc): arman y envían solo si el pedido completo
+    // sale de Belgrano; si falta algo de otro depósito, solo mandan lo suyo.
+    if(r.items_in_order==null || !r.is_multi_item)return '<span class="pack-action pack-ship">📤 ARMAR<span class="pa-sub">Y ENVIAR</span></span>';
     const fromBelgrano=packCounts.get('web:'+r.order_reference)||1;
-    if(fromBelgrano>=r.items_in_order)return `<span class="pack-action pack-pickup">🏬 RETIRA<span class="pa-sub">×${r.items_in_order} ACÁ</span></span>`;
-    return `<span class="pack-action pack-pickup-partial">📥 RETIRO<span class="pa-sub">+${r.items_in_order-fromBelgrano} de otro dep.</span></span>`;
+    if(fromBelgrano>=r.items_in_order)return `<span class="pack-action pack-ship">📤 ARMAR<span class="pa-sub">Y ENVIAR ×${r.items_in_order}</span></span>`;
+    return `<span class="pack-action pack-send">↗ MANDAR<span class="pa-sub">${fromBelgrano}/${r.items_in_order}</span></span>`;
   }
   return '<span class="pack-none">—</span>';
 }
