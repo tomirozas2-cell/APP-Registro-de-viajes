@@ -2336,11 +2336,34 @@ function setVbRangeCustom(){
   loadVentasBelgrano();
 }
 
+let vbSyncTriggering=false;
+async function triggerVentasSync(){
+  if(vbSyncTriggering)return;
+  vbSyncTriggering=true;
+  try{
+    const r=await fetch(`${SUPA_URL}/functions/v1/trigger-sync`,{method:'POST',headers:H});
+    const data=await r.json().catch(()=>({}));
+    if(r.status===429){
+      toast(`Se sincronizó hace poco — esperá ${data.waitSec||60}s y volvé a apretar`,'error');
+    } else if(r.ok && data.ok){
+      toast('🔄 Sincronizando con Entelequia y MercadoLibre... (~1 min)');
+      setTimeout(()=>loadVentasBelgrano(false),55000);
+    } else {
+      toast('No se pudo forzar la sincronización, va a correr en la próxima corrida horaria','error');
+    }
+  }catch(e){
+    // si falla el disparo manual, el sync horario de fondo sigue andando igual
+  }finally{
+    vbSyncTriggering=false;
+  }
+}
+
 async function loadVentasBelgrano(manual=false){
   const dot=document.getElementById('sync-ventas');
   if(dot)dot.className='sync-dot loading';
   const warnEl=document.getElementById('ventasSessionWarning');
   const body=document.getElementById('ventasBelgranoBody');
+  if(manual)triggerVentasSync();
   try{
     const [status]=await supa.get('sync_status','id=eq.main&select=*');
     if(status && (status.entelequia_session_ok===false || status.ml_session_ok===false)){
