@@ -2108,6 +2108,21 @@ function setVentaEstado(id,nuevo){
   patchVentaBelgrano(id,{estado:nuevo});
 }
 
+function toggleSalioBelgrano(id,nuevo){
+  patchVentaBelgrano(id,{salio_belgrano:nuevo});
+}
+
+async function deleteVentaBelgrano(id){
+  if(!confirm('¿Eliminar esta línea?'))return;
+  try{
+    await supa.del('ventas_belgrano',id);
+    toast('Línea eliminada');
+    loadVentasBelgrano();
+  }catch(e){
+    toast('Error eliminando: '+e.message,'error');
+  }
+}
+
 function saveVentaNota(id,input){
   patchVentaBelgrano(id,{nota:input.value.trim()||null});
 }
@@ -2449,6 +2464,8 @@ function renderVentasBelgrano(){
           <td style="white-space:nowrap">
             <button class="btn-estado-toggle" title="Marcar como confirmado" onclick="setVentaEstado(${r.id},'${r.estado==='confirmado'?'pendiente':'confirmado'}')" style="border:1.5px solid ${r.estado==='confirmado'?'#1fdb6b':'var(--border2)'};background:${r.estado==='confirmado'?'#1fdb6b':'var(--s2)'};color:${r.estado==='confirmado'?'#022b12':'var(--muted2)'};font-weight:800;border-radius:5px;padding:4px 9px;cursor:pointer;margin-right:4px;transition:all .15s;font-size:13px${r.estado==='confirmado'?';box-shadow:0 0 10px rgba(31,219,107,.6)':''}">✓</button>
             <button class="btn-estado-toggle" title="Marcar como no disponible" onclick="setVentaEstado(${r.id},'${r.estado==='no_esta'?'pendiente':'no_esta'}')" style="border:1.5px solid ${r.estado==='no_esta'?'#ff2d2d':'var(--border2)'};background:${r.estado==='no_esta'?'#ff2d2d':'var(--s2)'};color:${r.estado==='no_esta'?'#2b0000':'var(--muted2)'};font-weight:800;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:13px${r.estado==='no_esta'?';box-shadow:0 0 10px rgba(255,45,45,.6)':''}">✕</button>
+            <button class="btn-estado-toggle" title="${r.salio_belgrano?'Ya salió de Belgrano — click para desmarcar':'Marcar que salió de Belgrano (etiqueta impresa)'}" onclick="toggleSalioBelgrano(${r.id},${!r.salio_belgrano})" style="border:1px solid ${r.salio_belgrano?'#60a5fa':'var(--border2)'};background:${r.salio_belgrano?'rgba(96,165,250,.22)':'var(--s2)'};color:${r.salio_belgrano?'#bcdcff':'var(--muted)'};font-weight:700;border-radius:5px;padding:4px 6px;cursor:pointer;margin-left:4px;font-size:11px;vertical-align:middle">🚚${r.salio_belgrano?'✓':''}</button>
+            <button class="btn-estado-toggle" title="Eliminar" onclick="deleteVentaBelgrano(${r.id})" style="border:1.5px solid var(--border2);background:var(--s2);color:var(--muted2);font-weight:800;border-radius:5px;padding:4px 8px;cursor:pointer;margin-left:4px;font-size:12px">🗑</button>
           </td>
         </tr>`;
       }).join('');
