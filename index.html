@@ -2077,7 +2077,7 @@ async function loadHistorial(){
       </div>`;
     }).join('');
 
-  }catch(err){setSyncDot('historial','err');list.innerHTML=`<div class="history-empty"><div class="big">❌</div><p>${err.message}</p></div>`}
+  }catch(err){setSyncDot('historial','err');list.innerHTML=`<div class="history-empty"><div class="big">❌</div><p>${escHtml(err.message)}</p></div>`}
 }
 
 async function redownloadHistorial(id){
