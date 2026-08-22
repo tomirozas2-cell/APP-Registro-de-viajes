@@ -48,6 +48,16 @@ body.sidebar-collapsed .nav-link{position:relative}
 .sidebar-toggle:hover{color:var(--text);border-color:var(--border2)}
 .theme-toggle{position:fixed;top:16px;right:22px;z-index:200;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .theme-toggle:hover{border-color:var(--border2);filter:brightness(1.15)}
+.logout-btn{position:fixed;top:16px;right:66px;z-index:200;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--border);background:var(--s2);color:var(--muted2);cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.logout-btn:hover{border-color:var(--border2);color:var(--text)}
+.auth-gate{position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;padding:20px}
+.auth-gate-box{width:320px;max-width:100%;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:30px 26px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.auth-gate-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text);text-align:center;margin-bottom:4px}
+.auth-gate-sub{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:22px}
+.auth-gate-box .field-label{margin-bottom:6px;display:block}
+.auth-gate-box input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:15px;padding:10px 12px;border-radius:8px;width:100%;margin-bottom:16px;transition:border-color .2s}
+.auth-gate-box input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(230,51,41,.15)}
+.auth-gate-error{color:var(--unk);font-size:12px;min-height:16px;margin:-8px 0 4px;text-align:center}
 .nav-logo{padding:12px 8px 10px;border-bottom:1px solid var(--border)}
 .nav-logo h1{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;line-height:1;background:linear-gradient(135deg,var(--red),var(--red2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .nav-logo p{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-top:3px}
@@ -478,6 +488,7 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
   .sel-bar{flex-direction:column;align-items:stretch;text-align:center}
   .sel-actions{justify-content:center}
   .theme-toggle{top:8px;right:8px;width:32px;height:32px;font-size:14px}
+  .logout-btn{top:8px;right:48px;height:32px;padding:0 10px;font-size:11px}
   .est-grid{grid-template-columns:1fr}
   .est-total-val{font-size:34px}
   .est-shortcuts{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -496,6 +507,87 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
 </head>
 <body>
 <script>if(localStorage.getItem('theme')==='light')document.body.classList.add('light')</script>
+
+<div class="auth-gate" id="authGate">
+  <form class="auth-gate-box" id="authGateForm" onsubmit="return authGateSubmit(event)">
+    <div class="auth-gate-title">VENTAS BELGRANO</div>
+    <div class="auth-gate-sub">Acceso interno</div>
+    <label class="field-label">Usuario</label>
+    <input type="email" id="authEmail" autocomplete="username" required>
+    <label class="field-label">Contraseña</label>
+    <input type="password" id="authPassword" autocomplete="current-password" required>
+    <div class="auth-gate-error" id="authGateError"></div>
+    <button type="submit" class="btn btn-primary" id="authGateBtn">Entrar</button>
+  </form>
+</div>
+<script>
+// Auth minima contra Supabase Auth (misma cuenta compartida que Consignaciones,
+// comparten proyecto). Corre apenas arranca <body>, antes de que el resto de
+// la app pueda pedir datos, para no dejar la pantalla armada sin sesion.
+const SUPA_URL='https://mwikqetkhjujbkahzlqf.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13aWtxZXRraGp1amJrYWh6bHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNjkzMTksImV4cCI6MjA5Mzg0NTMxOX0.b7imZFMo9v8-AVVIK5G5YRped8OQ0xdnUvt0x_RZHL8';
+const AUTH_KEY='vb_auth_session';
+
+function getAuthSession(){try{return JSON.parse(localStorage.getItem(AUTH_KEY))}catch{return null}}
+function setAuthSession(s){s?localStorage.setItem(AUTH_KEY,JSON.stringify(s)):localStorage.removeItem(AUTH_KEY)}
+
+async function authRefresh(refresh_token){
+  const r=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`,{
+    method:'POST',headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+    body:JSON.stringify({refresh_token})
+  });
+  const data=await r.json();
+  if(!r.ok)throw new Error('refresh_failed');
+  setAuthSession({access_token:data.access_token,refresh_token:data.refresh_token,expires_at:Date.now()+data.expires_in*1000});
+  return data.access_token;
+}
+
+async function getAccessToken(){
+  const s=getAuthSession();
+  if(!s)return null;
+  if(s.expires_at-Date.now()>60000)return s.access_token;
+  try{return await authRefresh(s.refresh_token)}catch{setAuthSession(null);return null}
+}
+
+async function getAuthHeaders(){
+  const token=await getAccessToken();
+  if(!token){showAuthGate();throw new Error('sesion_vencida')}
+  return {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+token};
+}
+
+function showAuthGate(){document.getElementById('authGate').style.display='flex'}
+function hideAuthGate(){document.getElementById('authGate').style.display='none'}
+
+async function authGateSubmit(ev){
+  ev.preventDefault();
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPassword').value;
+  const errEl=document.getElementById('authGateError');
+  const btn=document.getElementById('authGateBtn');
+  errEl.textContent='';btn.disabled=true;btn.textContent='Entrando...';
+  try{
+    const r=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`,{
+      method:'POST',headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body:JSON.stringify({email,password})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error_description||data.msg||'Usuario o contraseña incorrectos');
+    setAuthSession({access_token:data.access_token,refresh_token:data.refresh_token,expires_at:Date.now()+data.expires_in*1000});
+    hideAuthGate();
+  }catch(e){
+    errEl.textContent=e.message;
+  }finally{
+    btn.disabled=false;btn.textContent='Entrar';
+  }
+  return false;
+}
+
+function authLogout(){setAuthSession(null);location.reload()}
+
+getAccessToken().then(token=>{if(!token)showAuthGate()});
+</script>
+
+<button class="logout-btn" onclick="authLogout()" title="Cerrar sesión">⏻ Salir</button>
 <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Modo día / noche">🌙</button>
 <div class="app">
 
@@ -970,16 +1062,16 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
 // ══════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════
-const SUPA_URL = 'https://mwikqetkhjujbkahzlqf.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13aWtxZXRraGp1amJrYWh6bHFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNjkzMTksImV4cCI6MjA5Mzg0NTMxOX0.b7imZFMo9v8-AVVIK5G5YRped8OQ0xdnUvt0x_RZHL8';
-const H = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+// SUPA_URL/SUPA_KEY y getAuthHeaders() se definen en el script de auth, al
+// principio del <body> -- se necesitan ahi para poder mostrar el gate de
+// login antes de que corra el resto de la app.
 
 const supa = {
-  async get(t,q=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json()},
-  async post(t,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()},
-  async patch(t,id,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()},
-  async del(t,id){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:H});if(!r.ok)throw new Error(await r.text())},
-  async upsert(t,b,oc){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?on_conflict=${oc}`,{method:'POST',headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()}
+  async get(t,q=''){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json()},
+  async post(t,b){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()},
+  async patch(t,id,b){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()},
+  async del(t,id){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:H});if(!r.ok)throw new Error(await r.text())},
+  async upsert(t,b,oc){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?on_conflict=${oc}`,{method:'POST',headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()}
 };
 
 // ══════════════════════════════════════
@@ -2136,7 +2228,7 @@ async function buscarProductoPorSku(skuId,productoId,precioId,silent){
   productoEl.disabled=true;
   try{
     const r=await fetch(`${SUPA_URL}/functions/v1/buscar-producto?q=${encodeURIComponent(sku)}`,{
-      headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}
+      headers:await getAuthHeaders()
     });
     if(!r.ok)throw new Error(await r.text());
     const data=await r.json();
@@ -2341,7 +2433,7 @@ async function triggerVentasSync(){
   if(vbSyncTriggering)return;
   vbSyncTriggering=true;
   try{
-    const r=await fetch(`${SUPA_URL}/functions/v1/trigger-sync`,{method:'POST',headers:H});
+    const r=await fetch(`${SUPA_URL}/functions/v1/trigger-sync`,{method:'POST',headers:await getAuthHeaders()});
     const data=await r.json().catch(()=>({}));
     if(r.status===429){
       toast(`Se sincronizó hace poco — esperá ${data.waitSec||60}s y volvé a apretar`,'error');
