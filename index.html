@@ -2418,6 +2418,17 @@ function packCountsByChannel(rows){
   return m;
 }
 
+// Link directo al pedido en el panel de origen, para no tener que buscarlo
+// a mano. ML: order_reference es el numero de venta individual (no el pack_id).
+// Web: order_reference es el id de pedido del panel admin de Entelequia.
+function orderLinkUrl(r){
+  if(!r.order_reference)return null;
+  const id=encodeURIComponent(r.order_reference);
+  if(r.channel==='ml')return `https://vendedores.mercadolibre.com.ar/ventas/${id}/detalle`;
+  if(r.channel==='web')return `https://entelequia.com.ar/admin/panel/pedido/ver/${id}`;
+  return null;
+}
+
 function itemsActionCell(r,packCounts){
   if(r.channel==='ml'){
     if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
@@ -2472,6 +2483,11 @@ function renderVentasBelgrano(){
           : r.estado==='no_esta' ? 'background:var(--row-bad-bg);border-left:3px solid var(--unk)' : 'border-left:3px solid transparent';
         const packBadge = (r.is_multi_item && r.pack_id)
           ? `<br><span style="font-size:10px;color:var(--c3);font-weight:600" title="Mismo pedido de ML que otras filas con este número">paq. ${escHtml(r.pack_id)}</span>` : '';
+        const orderUrl = orderLinkUrl(r);
+        const orderCell = escHtml(r.order_reference)||'—';
+        const orderCellLinked = orderUrl
+          ? `<a href="${orderUrl}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-decoration-style:dotted" title="Abrir pedido">${orderCell}</a>`
+          : orderCell;
         return `
         <tr style="${rowBg}">
           <td>${fmtFechaHora(r.sold_at)}</td>
@@ -2480,7 +2496,7 @@ function renderVentasBelgrano(){
           <td>${escHtml(r.sku)||'—'}</td>
           <td>${r.quantity>1?`<span class="qty-badge">${r.quantity}</span>`:(r.quantity??'—')}</td>
           <td>${r.price?'$'+Math.round(r.price).toLocaleString('es-AR'):'—'}</td>
-          <td>${escHtml(r.order_reference)||'—'}${packBadge}</td>
+          <td>${orderCellLinked}${packBadge}</td>
           <td style="text-align:center">${itemsActionCell(r,packCounts)}</td>
           <td class="val-cell" style="text-align:right">${r.channel==='ml'&&r.net_amount?'<span style="color:var(--c2);font-weight:800">$'+Math.round(r.net_amount).toLocaleString('es-AR')+'</span>'+(r.commission?'<br><span style="font-size:9px;color:var(--unk)">−$'+Math.round(Math.abs(r.commission)).toLocaleString('es-AR')+'</span>':'')+(r.is_multi_item?' <span style="font-size:9px;color:var(--muted)" title="Monto del paquete completo, no solo de este producto">📦</span>':''):(r.channel==='web'&&r.price?'<span style="color:var(--muted2);font-weight:700">$'+Math.round(r.price).toLocaleString('es-AR')+'</span>':'—')}</td>
           <td class="notes-cell"><input type="text" value="${escHtml(r.nota)}" placeholder="✎ nota..." onchange="saveVentaNota(${r.id},this)" style="background:var(--s2);border:1px solid var(--border2);border-radius:6px;padding:5px 7px;color:var(--text);width:140px"></td>
