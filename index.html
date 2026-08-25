@@ -1116,7 +1116,8 @@ const supa = {
   async post(t,b){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()},
   async patch(t,id,b){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()},
   async del(t,id){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:H});if(!r.ok)throw new Error(await r.text())},
-  async upsert(t,b,oc){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?on_conflict=${oc}`,{method:'POST',headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()}
+  async upsert(t,b,oc){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?on_conflict=${oc}`,{method:'POST',headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()},
+  async patchWhere(t,filterQs,b){const H=await getAuthHeaders();const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${filterQs}`,{method:'PATCH',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()}
 };
 
 // ══════════════════════════════════════
@@ -2610,8 +2611,22 @@ async function addAndreaniManual(){
     triggerAndreaniLookup();
   }catch(e){
     if(/duplicate key|already exists|23505/i.test(e.message)){
-      toast('Ese pedido ya está cargado en la lista','error');
-      loadAndreaniEnvios();
+      // Ya existe una fila con este pedido (probablemente una vieja que se
+      // ocultó/resolvió) -- en vez de rechazarlo, la revivimos con los
+      // datos nuevos y forzamos que se vuelva a buscar el pedido.
+      try{
+        await supa.patchWhere('andreani_envios',`order_reference=eq.${encodeURIComponent(orden)}`,{
+          resolved_at:null, match_status:'pendiente', match_error:null, match_candidatos:null,
+          nombre:null, apellido:null,
+          peso_gr:num('andAddPeso'), alto_cm:num('andAddAlto'), ancho_cm:num('andAddAncho'), profundidad_cm:num('andAddProf'),
+        });
+        ['andAddOrden','andAddPeso','andAddAlto','andAddAncho','andAddProf'].forEach(id=>document.getElementById(id).value='');
+        toast('Ese pedido ya estaba cargado — lo reactivé y lo vuelvo a buscar');
+        loadAndreaniEnvios();
+        triggerAndreaniLookup();
+      }catch(e2){
+        toast('Error reactivando: '+e2.message,'error');
+      }
     } else {
       toast('Error agregando: '+e.message,'error');
     }
