@@ -2792,6 +2792,12 @@ function orderLinkUrl(r){
 function itemsActionCell(r,packCounts){
   if(r.channel==='ml'){
     if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
+    if(r.sku_qty_in_order && r.sku_qty_in_order>r.quantity){
+      // Mismo producto, pero el pedido pide mas unidades de las que salieron
+      // de Belgrano (se repartio entre depositos) -- no es un paquete
+      // completo aunque ML lo vea como 1 sola linea.
+      return `<span class="pack-action pack-send">↗ MANDAR<span class="pa-sub">${r.quantity}/${r.sku_qty_in_order}</span></span>`;
+    }
     if(!r.is_multi_item)return '<span class="pack-action pack-solo">📦 ARMAR<span class="pa-sub">PAQUETE</span></span>';
     const fromBelgrano=packCounts.get('ml:'+(r.pack_id||r.order_reference))||1;
     if(fromBelgrano>=r.items_in_order)return `<span class="pack-action pack-multi">📦 ARMAR<span class="pa-sub">×${r.items_in_order}</span></span>`;
