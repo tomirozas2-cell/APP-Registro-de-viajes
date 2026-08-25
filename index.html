@@ -599,6 +599,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
     <button class="nav-link" data-panel="motos" onclick="showPanel('motos',this)" title="Motos"><span class="icon">🏍️</span><span class="nav-label"> Motos</span><span class="sync-dot" id="sync-motos"></span></button>
     <button class="nav-link" data-panel="zonas" onclick="showPanel('zonas',this)" title="Zonas"><span class="icon">🗺️</span><span class="nav-label"> Zonas</span></button>
     <button class="nav-link" data-panel="historial" onclick="showPanel('historial',this)" title="Historial"><span class="icon">📋</span><span class="nav-label"> Historial</span><span class="sync-dot" id="sync-historial"></span></button>
+    <button class="nav-link" data-panel="andreani" onclick="showPanel('andreani',this)" title="Excel Andreani"><span class="icon">🏷️</span><span class="nav-label"> Excel Andreani</span><span class="sync-dot" id="sync-andreani"></span></button>
     <button class="nav-link" data-panel="ventas" onclick="showPanel('ventas',this)" title="Ventas Belgrano"><span class="icon">🏪</span><span class="nav-label"> Ventas Belgrano</span><span class="sync-dot" id="sync-ventas"></span></button>
     <button class="nav-link" data-panel="mercaderia" onclick="showPanel('mercaderia',this)" title="Mercadería Suelta Belgrano"><span class="icon">📦</span><span class="nav-label"> Mercadería Suelta</span><span class="sync-dot" id="sync-mercaderia"></span></button>
     <button class="nav-link" data-panel="estadisticas" onclick="showPanel('estadisticas',this)" title="Estadísticas Material Belgrano"><span class="icon">📊</span><span class="nav-label"> Estadísticas Belgrano</span><span class="sync-dot" id="sync-estadisticas"></span></button>
@@ -806,6 +807,50 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
   <div class="card">
     <div class="card-title"><span class="dot"></span> REGISTROS DEL MES</div>
     <div id="histList"><div class="history-empty"><div class="big">⏳</div><p>Cargando...</p></div></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-andreani">
+  <div class="page-header"><h2>EXCEL ANDREANI</h2><p>Pedidos web que van por correo (Andreani a domicilio o a sucursal). Se detectan solos cada 1 hora — anotá acá el peso y las medidas del paquete y generá el excel oficial para subir a Andreani.</p></div>
+
+  <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat"><div class="stat-val" id="and-listos" style="color:var(--c2)">—</div><div class="stat-lbl">Listos para exportar</div></div>
+    <div class="stat"><div class="stat-val" id="and-faltapeso" style="color:var(--c3)">—</div><div class="stat-lbl">Falta peso/medidas</div></div>
+    <div class="stat"><div class="stat-val" id="and-revisar" style="color:var(--unk)">—</div><div class="stat-lbl">A revisar</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="flex-wrap:wrap;row-gap:10px">
+      <span class="dot"></span> ENVÍOS PENDIENTES
+      <span style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <span id="and-lastsync" style="font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none"></span>
+        <button class="btn btn-sm" onclick="loadAndreaniEnvios(true)">↻ Actualizar</button>
+        <button class="btn btn-sm" id="andreaniDownloadBtn" onclick="downloadAndreaniExcel()" style="border-color:rgba(74,222,128,.4);color:var(--c2)">⬇ Descargar Excel</button>
+      </span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Pedido</th><th>Tipo</th><th style="min-width:150px">Cliente</th><th style="min-width:180px">Destino</th>
+            <th style="width:70px">Peso (g)</th><th style="width:60px">Alto</th><th style="width:60px">Ancho</th><th style="width:70px">Prof.</th>
+            <th>Estado</th><th style="width:110px">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="andreaniBody">
+          <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="add-row-form">
+      <div class="add-field"><label>N° PEDIDO WEB</label><input type="text" id="andAddOrden" style="width:120px"></div>
+      <div class="add-field"><label>PESO (g)</label><input type="number" id="andAddPeso" style="width:80px"></div>
+      <div class="add-field"><label>ALTO (cm)</label><input type="number" id="andAddAlto" style="width:70px"></div>
+      <div class="add-field"><label>ANCHO (cm)</label><input type="number" id="andAddAncho" style="width:70px"></div>
+      <div class="add-field"><label>PROF. (cm)</label><input type="number" id="andAddProf" style="width:70px"></div>
+      <button class="btn-add-row" onclick="addAndreaniManual()">+ Agregar pedido</button>
+    </div>
   </div>
 </div>
 
@@ -1296,6 +1341,7 @@ function showPanel(id,btn){
   if(id==='historial')loadHistorial();
   if(id==='motos')loadMotos();
   if(id==='ventas')loadVentasBelgrano();
+  if(id==='andreani')loadAndreaniEnvios();
   if(id==='mercaderia')loadMercaderiaBelgrano();
   if(id==='estadisticas')loadEstadisticas();
 }
@@ -2400,6 +2446,223 @@ async function addVentaBelgranoManual(){
     loadVentasBelgrano();
   }catch(e){
     toast('Error agregando línea: '+e.message,'error');
+  }
+}
+
+// ══════════════════════════════════════
+// EXCEL ANDREANI
+// ══════════════════════════════════════
+let andAllRows=[];
+
+async function loadAndreaniEnvios(manual=false){
+  const dot=document.getElementById('sync-andreani');
+  if(dot)dot.className='sync-dot loading';
+  try{
+    const [status]=await supa.get('sync_status','id=eq.main&select=last_run_at');
+    if(status && status.last_run_at){
+      document.getElementById('and-lastsync').textContent='Última búsqueda: '+fmtFechaHora(status.last_run_at);
+    }
+    andAllRows=await supa.get('andreani_envios','resolved_at=is.null&order=created_at.desc&limit=500');
+    renderAndreaniEnvios();
+    if(dot)dot.className='sync-dot ok';
+    if(manual)toast('Actualizado');
+  }catch(e){
+    console.error(e);
+    document.getElementById('andreaniBody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--unk)">Error cargando envíos.</td></tr>';
+    if(dot)dot.className='sync-dot err';
+    if(manual)toast('No se pudo actualizar','error');
+  }
+}
+
+function andreaniEstadoBadge(r){
+  if(r.match_status==='error')return `<span class="pack-action pack-send" title="${escHtml(r.match_error||'')}">⚠ ERROR</span>`;
+  if(!r.nombre)return '<span class="pack-none">⏳ buscando pedido...</span>';
+  if(r.match_status==='revisar')return '<span class="pack-action pack-ship">🔎 REVISAR</span>';
+  if(r.peso_gr==null)return '<span class="pack-action pack-send">✎ FALTA PESO</span>';
+  return '<span class="pack-action pack-multi">✓ LISTO</span>';
+}
+
+function renderAndreaniEnvios(){
+  const body=document.getElementById('andreaniBody');
+  const rows=andAllRows;
+
+  const listos=rows.filter(r=>r.match_status==='listo' && r.peso_gr!=null).length;
+  const faltaPeso=rows.filter(r=>r.match_status==='listo' && r.peso_gr==null).length;
+  const revisar=rows.filter(r=>r.match_status==='revisar').length;
+  document.getElementById('and-listos').textContent=listos;
+  document.getElementById('and-faltapeso').textContent=faltaPeso;
+  document.getElementById('and-revisar').textContent=revisar;
+
+  if(!rows.length){
+    body.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">Sin envíos pendientes.</td></tr>';
+    return;
+  }
+
+  body.innerHTML=rows.map(r=>{
+    const tipo=r.tipo_envio==='sucursal'?'🏤 Sucursal':r.tipo_envio==='domicilio'?'🏠 Domicilio':'—';
+    const cliente=r.nombre?escHtml(`${r.nombre} ${r.apellido||''}`.trim()):'—';
+
+    let destino;
+    if(r.match_status==='revisar' && r.match_candidatos && r.match_candidatos.length){
+      const opts=r.match_candidatos.map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+      destino=`<select id="andCand_${r.id}" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 5px;border-radius:5px;max-width:220px">${opts}</select>
+        <button class="btn btn-sm" onclick="resolveAndreaniMatch(${r.id})" style="margin-left:4px;padding:2px 6px">✓</button>`;
+    } else if(r.match_valor){
+      destino=escHtml(r.match_valor);
+    } else {
+      destino='—';
+    }
+
+    const medidaInput=(campo,val,w)=>`<input type="number" id="and_${campo}_${r.id}" value="${val??''}" style="width:${w}px;background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:3px 4px;border-radius:4px">`;
+
+    return `<tr>
+      <td>${escHtml(r.order_reference)}</td>
+      <td>${tipo}</td>
+      <td>${cliente}</td>
+      <td>${destino}</td>
+      <td>${medidaInput('peso',r.peso_gr,55)}</td>
+      <td>${medidaInput('alto',r.alto_cm,45)}</td>
+      <td>${medidaInput('ancho',r.ancho_cm,45)}</td>
+      <td>${medidaInput('prof',r.profundidad_cm,45)}</td>
+      <td>${andreaniEstadoBadge(r)}</td>
+      <td>
+        <button class="btn btn-sm" onclick="saveAndreaniMedidas(${r.id})" title="Guardar peso/medidas" style="padding:3px 6px">💾</button>
+        <button class="btn-estado-toggle" title="Eliminar" onclick="deleteAndreaniEnvio(${r.id})" style="border:1.5px solid var(--border2);background:var(--s2);color:var(--muted2);font-weight:800;border-radius:5px;padding:3px 6px;cursor:pointer;margin-left:4px;font-size:12px">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveAndreaniMedidas(id){
+  const val=campo=>{
+    const el=document.getElementById(`and_${campo}_${id}`);
+    return el&&el.value!==''?+el.value:null;
+  };
+  try{
+    await supa.patch('andreani_envios',id,{
+      peso_gr:val('peso'), alto_cm:val('alto'), ancho_cm:val('ancho'), profundidad_cm:val('prof'),
+    });
+    toast('Medidas guardadas');
+    loadAndreaniEnvios();
+  }catch(e){
+    toast('Error guardando: '+e.message,'error');
+  }
+}
+
+async function resolveAndreaniMatch(id){
+  const sel=document.getElementById(`andCand_${id}`);
+  if(!sel||!sel.value)return;
+  try{
+    await supa.patch('andreani_envios',id,{match_valor:sel.value, match_status:'listo', match_candidatos:null});
+    toast('Destino confirmado');
+    loadAndreaniEnvios();
+  }catch(e){
+    toast('Error confirmando: '+e.message,'error');
+  }
+}
+
+async function deleteAndreaniEnvio(id){
+  if(!confirm('¿Eliminar este envío de la lista?'))return;
+  try{
+    await supa.del('andreani_envios',id);
+    toast('Eliminado');
+    loadAndreaniEnvios();
+  }catch(e){
+    toast('Error eliminando: '+e.message,'error');
+  }
+}
+
+let andreaniLookupTriggering=false;
+async function triggerAndreaniLookup(){
+  if(andreaniLookupTriggering)return;
+  andreaniLookupTriggering=true;
+  try{
+    const r=await fetch(`${SUPA_URL}/functions/v1/trigger-sync`,{method:'POST',headers:await getAuthHeaders()});
+    const data=await r.json().catch(()=>({}));
+    if(r.status===429){
+      toast(`Ya se está buscando — esperá ${data.waitSec||60}s y volvé a apretar`,'error');
+    } else if(r.ok && data.ok){
+      toast('🔎 Buscando el pedido en Entelequia... (~1 min)');
+      setTimeout(()=>loadAndreaniEnvios(false),55000);
+    } else {
+      toast('No se pudo forzar la búsqueda, va a correr en la próxima corrida horaria','error');
+    }
+  }catch(e){
+    // si falla el disparo manual, el sync horario de fondo lo va a procesar igual
+  }finally{
+    andreaniLookupTriggering=false;
+  }
+}
+
+async function addAndreaniManual(){
+  const orden=document.getElementById('andAddOrden').value.trim();
+  if(!orden){toast('Falta el número de pedido','error');return}
+  const num=id=>{const v=document.getElementById(id).value;return v!==''?+v:null};
+  try{
+    await supa.post('andreani_envios',{
+      order_reference:orden,
+      referencia:orden,
+      peso_gr:num('andAddPeso'), alto_cm:num('andAddAlto'), ancho_cm:num('andAddAncho'), profundidad_cm:num('andAddProf'),
+      match_status:'pendiente',
+    });
+    ['andAddOrden','andAddPeso','andAddAlto','andAddAncho','andAddProf'].forEach(id=>document.getElementById(id).value='');
+    loadAndreaniEnvios();
+    triggerAndreaniLookup();
+  }catch(e){
+    toast('Error agregando: '+e.message,'error');
+  }
+}
+
+let andreaniExportTriggering=false;
+async function downloadAndreaniExcel(){
+  if(andreaniExportTriggering)return;
+  andreaniExportTriggering=true;
+  const btn=document.getElementById('andreaniDownloadBtn');
+  btn.disabled=true;
+  try{
+    const r=await fetch(`${SUPA_URL}/functions/v1/trigger-andreani-export`,{method:'POST',headers:await getAuthHeaders()});
+    const data=await r.json().catch(()=>({}));
+    if(r.status===429){
+      toast(`Se generó hace poco — esperá ${data.waitSec||60}s y volvé a apretar`,'error');
+      return;
+    }
+    if(!r.ok || !data.ok){
+      toast('No se pudo generar el excel','error');
+      return;
+    }
+    toast('📄 Generando excel... (~30 seg)');
+    setTimeout(fetchLatestAndreaniExcel,35000);
+  }catch(e){
+    toast('Error: '+e.message,'error');
+  }finally{
+    andreaniExportTriggering=false;
+    btn.disabled=false;
+  }
+}
+
+async function fetchLatestAndreaniExcel(){
+  try{
+    const H=await getAuthHeaders();
+    const listRes=await fetch(`${SUPA_URL}/storage/v1/object/list/andreani-excels`,{
+      method:'POST', headers:H,
+      body:JSON.stringify({prefix:'',sortBy:{column:'created_at',order:'desc'},limit:1}),
+    });
+    if(!listRes.ok)throw new Error(await listRes.text());
+    const files=await listRes.json();
+    if(!files||!files.length){toast('Todavía no está listo, esperá unos segundos y apretá "Descargar Excel" de nuevo','error');return}
+    const filename=files[0].name;
+    const fileRes=await fetch(`${SUPA_URL}/storage/v1/object/andreani-excels/${encodeURIComponent(filename)}`,{headers:H});
+    if(!fileRes.ok)throw new Error(await fileRes.text());
+    const blob=await fileRes.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Excel descargado: '+filename);
+    loadAndreaniEnvios();
+  }catch(e){
+    toast('Error descargando: '+e.message,'error');
   }
 }
 
