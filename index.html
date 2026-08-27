@@ -2858,6 +2858,12 @@ function renderVentasBelgrano(){
         web:'background:rgba(74,222,128,.28);color:var(--badge-web-fg);box-shadow:inset 0 0 0 1px rgba(74,222,128,.5)',
         otro:'background:rgba(251,191,36,.25);color:var(--badge-otro-fg);box-shadow:inset 0 0 0 1px rgba(251,191,36,.5)',
       };
+      const shipTypeLabel={flex:'⚡ FLEX',colecta:'📥 COLECTA',retiro:'🏬 RETIRO'};
+      const shipTypeStyle={
+        flex:'background:rgba(96,165,250,.18);color:var(--c1)',
+        colecta:'background:rgba(167,139,250,.18);color:var(--lucho)',
+        retiro:'background:rgba(45,212,191,.18);color:#2dd4bf',
+      };
       const packCounts=packCountsByChannel(vbAllRows);
       body.innerHTML=rows.map(r=>{
         const rowBg = r.estado==='confirmado' ? 'background:var(--row-ok-bg);border-left:3px solid var(--c2)'
@@ -2872,7 +2878,7 @@ function renderVentasBelgrano(){
         return `
         <tr style="${rowBg}">
           <td>${fmtFechaHora(r.sold_at)}</td>
-          <td><span class="zbadge" style="${canalStyle[r.channel]||canalStyle.otro};font-weight:700">${(r.channel||'otro').toUpperCase()}</span>${r.source==='manual'?'<br><span style="font-size:10px;color:var(--c3);font-weight:600">✎ manual</span>':''}</td>
+          <td><span class="zbadge" style="${canalStyle[r.channel]||canalStyle.otro};font-weight:700">${(r.channel||'otro').toUpperCase()}</span>${r.channel==='ml'&&shipTypeLabel[r.ml_ship_type]?`<br><span class="zbadge" style="${shipTypeStyle[r.ml_ship_type]};font-weight:700;margin-top:2px">${shipTypeLabel[r.ml_ship_type]}</span>`:''}${r.source==='manual'?'<br><span style="font-size:10px;color:var(--c3);font-weight:600">✎ manual</span>':''}</td>
           <td title="${escHtml(r.title)}" style="white-space:normal;max-width:260px">${escHtml(r.title)||'—'}</td>
           <td>${escHtml(r.sku)||'—'}</td>
           <td>${r.quantity>1?`<span class="qty-badge">${r.quantity}</span>`:(r.quantity??'—')}</td>
