@@ -884,7 +884,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
       <span class="legend-lbl">Acción:</span>
       <span class="pack-action pack-solo legend-chip" title="Venta de 1 solo producto que tienen en Belgrano: armar su paquete">📦 1</span>
       <span class="pack-action pack-multi legend-chip" title="Pedido de varios productos, todos los tienen en Belgrano: armar el paquete completo">📦 ×N</span>
-      <span class="pack-action pack-send legend-chip" title="No arman nada acá, solo mandan lo que tienen: o falta un resto del pedido que está en otro depósito (para juntar en destino), o el pedido entero va a otra sucursal (el armado/entrega final se hace allá)">↗ mandar</span>
+      <span class="pack-action pack-send legend-chip" title="No arman nada acá, solo mandan lo que tienen: o falta un resto del pedido que está en otro depósito (para juntar en destino), o el pedido entero va a otra sucursal (el armado/entrega final se hace allá), o es venta ML tipo Retiro/entrega acordada (se coordina fuera de Belgrano)">↗ mandar</span>
       <span class="pack-action pack-ship legend-chip" title="Venta web con envío (moto/correo) y el pedido completo sale de Belgrano: armarla y enviarla">📤 armar</span>
       <span class="pack-action pack-pickup legend-chip" title="Venta web con retiro en sucursal Belgrano: separarla, el cliente la retira ahí">🏬 retira</span>
       <span class="pack-action pack-pickup-partial legend-chip" title="Retiro en Belgrano con productos de otro depósito: van a llegar más para juntar el pedido">📥 +N</span>
@@ -2807,6 +2807,12 @@ function orderLinkUrl(r){
 function itemsActionCell(r,packCounts){
   if(r.channel==='ml'){
     if(r.items_in_order==null)return '<span class="pack-none">s/ detalle</span>';
+    if(r.ml_ship_type==='retiro'){
+      // Retiro/entrega acordada: el comprador NO retira en Belgrano, se
+      // coordina la entrega en otro lado -- Belgrano no arma nada, solo
+      // manda la mercaderia.
+      return '<span class="pack-action pack-send">↗ MANDAR<span class="pa-sub">RETIRO ML</span></span>';
+    }
     if(r.sku_qty_in_order && r.sku_qty_in_order>r.quantity){
       // Mismo producto, pero el pedido pide mas unidades de las que salieron
       // de Belgrano (se repartio entre depositos) -- no es un paquete
