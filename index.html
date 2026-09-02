@@ -2602,7 +2602,7 @@ async function addAndreaniManual(){
   try{
     await supa.post('andreani_envios',{
       order_reference:orden,
-      referencia:orden,
+      numero_interno:orden,
       peso_gr:num('andAddPeso'), alto_cm:num('andAddAlto'), ancho_cm:num('andAddAncho'), profundidad_cm:num('andAddProf'),
       match_status:'pendiente',
     });
