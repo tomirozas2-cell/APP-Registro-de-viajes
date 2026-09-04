@@ -2565,7 +2565,10 @@ async function resolveAndreaniMatch(id){
 async function deleteAndreaniEnvio(id){
   if(!confirm('¿Eliminar este envío de la lista?'))return;
   try{
-    await supa.del('andreani_envios',id);
+    // No se borra la fila: si se borra, el sync horario la vuelve a traer
+    // porque deja de figurar como "ya procesada". Se marca resuelta en su
+    // lugar (resolved_at), que la oculta acá y bloquea el re-pull.
+    await supa.patch('andreani_envios',id,{resolved_at:new Date().toISOString()});
     toast('Eliminado');
     loadAndreaniEnvios();
   }catch(e){
