@@ -2643,6 +2643,7 @@ async function downloadAndreaniExcel(){
   const btn=document.getElementById('andreaniDownloadBtn');
   btn.disabled=true;
   try{
+    const desde=new Date().toISOString();
     const r=await fetch(`${SUPA_URL}/functions/v1/trigger-andreani-export`,{method:'POST',headers:await getAuthHeaders()});
     const data=await r.json().catch(()=>({}));
     if(r.status===429){
@@ -2654,16 +2655,52 @@ async function downloadAndreaniExcel(){
       return;
     }
     toast('📄 Generando excel... (~30 seg)');
-    setTimeout(fetchLatestAndreaniExcel,35000);
+    // No usar un timer fijo: GitHub Actions puede tardar mas de 30-35s (sin
+    // cache de dependencias), y si se descarga antes de que termine, se baja
+    // el excel VIEJO sin avisar (asi se mando dos veces el mismo excel con
+    // datos de domicilio, sin los pedidos de sucursal recien cargados).
+    // Se consulta sync_status hasta ver un last_success_at/last_error mas
+    // nuevo que "desde", recien ahi se sabe que ya hay un archivo fresco.
+    esperarExportAndreani(desde);
   }catch(e){
     toast('Error: '+e.message,'error');
-  }finally{
     andreaniExportTriggering=false;
     btn.disabled=false;
   }
 }
 
-async function fetchLatestAndreaniExcel(){
+async function esperarExportAndreani(desde,intento=0){
+  const btn=document.getElementById('andreaniDownloadBtn');
+  try{
+    const [status]=await supa.get('sync_status','id=eq.andreani_export&select=last_success_at,last_error,last_run_at');
+    const desdeMs=new Date(desde).getTime();
+    const listo=status && status.last_success_at && new Date(status.last_success_at).getTime()>desdeMs;
+    const fallo=status && status.last_error && status.last_run_at && new Date(status.last_run_at).getTime()>desdeMs;
+    if(listo){
+      await fetchLatestAndreaniExcel(desde);
+      andreaniExportTriggering=false;
+      btn.disabled=false;
+      return;
+    }
+    if(fallo){
+      toast('Error generando el excel: '+status.last_error,'error');
+      andreaniExportTriggering=false;
+      btn.disabled=false;
+      return;
+    }
+  }catch(e){
+    // sigue reintentando
+  }
+  if(intento>=20){ // ~100s de espera total
+    toast('Está tardando más de lo normal — probá "Descargar Excel" de nuevo en un rato','error');
+    andreaniExportTriggering=false;
+    btn.disabled=false;
+    return;
+  }
+  setTimeout(()=>esperarExportAndreani(desde,intento+1),5000);
+}
+
+async function fetchLatestAndreaniExcel(desde){
   try{
     const H=await getAuthHeaders();
     const listRes=await fetch(`${SUPA_URL}/storage/v1/object/list/andreani-excels`,{
@@ -2673,6 +2710,15 @@ async function fetchLatestAndreaniExcel(){
     if(!listRes.ok)throw new Error(await listRes.text());
     const files=await listRes.json();
     if(!files||!files.length){toast('Todavía no está listo, esperá unos segundos y apretá "Descargar Excel" de nuevo','error');return}
+    // Si se paso "desde" (llamada desde el flujo de exportar-y-esperar), el
+    // archivo mas nuevo tiene que ser POSTERIOR al momento en que se
+    // disparo la exportacion. Si no lo es, la corrida termino bien pero sin
+    // generar excel nuevo (no habia pedidos listos) -- bajar el archivo de
+    // la lista en ese caso seria repetir un excel viejo sin avisar.
+    if(desde && new Date(files[0].created_at).getTime()<=new Date(desde).getTime()){
+      toast('No hay pedidos nuevos listos para exportar (falta matching o peso/medidas)','error');
+      return;
+    }
     const filename=files[0].name;
     const fileRes=await fetch(`${SUPA_URL}/storage/v1/object/andreani-excels/${encodeURIComponent(filename)}`,{headers:H});
     if(!fileRes.ok)throw new Error(await fileRes.text());
