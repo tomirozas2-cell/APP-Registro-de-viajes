@@ -864,6 +864,10 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
       <span class="dot"></span> ÚLTIMAS VENTAS
       <span style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
         <span class="zone-tabs" style="margin:0;padding:3px">
+          <button class="zone-tab vb-warehouse active" data-w="belgrano" onclick="setVbWarehouse('belgrano',this)">🏪 BELGRANO</button>
+          <button class="zone-tab vb-warehouse" data-w="deposito" onclick="setVbWarehouse('deposito',this)">📦 DEPÓSITO</button>
+        </span>
+        <span class="zone-tabs" style="margin:0;padding:3px">
           <button class="zone-tab vb-range active" data-h="24" onclick="setVbRange(24,this)">24 HS</button>
           <button class="zone-tab vb-range" data-h="168" onclick="setVbRange(168,this)">7 DÍAS</button>
           <button class="zone-tab vb-range" data-h="720" onclick="setVbRange(720,this)">30 DÍAS</button>
@@ -2234,9 +2238,12 @@ function escHtml(s){
   return (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+const vbTableByWarehouse={belgrano:'ventas_belgrano',deposito:'ventas_deposito'};
+const vbWarehouseLabel={belgrano:'Belgrano',deposito:'Deposito'};
+
 async function patchVentaBelgrano(id,fields){
   try{
-    await supa.patch('ventas_belgrano',id,fields);
+    await supa.patch(vbTableByWarehouse[vbWarehouse],id,fields);
     loadVentasBelgrano();
   }catch(e){
     toast('Error guardando: '+e.message,'error');
@@ -2254,7 +2261,7 @@ function toggleSalioBelgrano(id,nuevo){
 async function deleteVentaBelgrano(id){
   if(!confirm('¿Eliminar esta línea?'))return;
   try{
-    await supa.del('ventas_belgrano',id);
+    await supa.del(vbTableByWarehouse[vbWarehouse],id);
     toast('Línea eliminada');
     loadVentasBelgrano();
   }catch(e){
@@ -2428,7 +2435,7 @@ async function addVentaBelgranoManual(){
   if(!producto){toast('Falta el nombre del producto','error');return}
   const precio=document.getElementById('vbAddPrecio').value;
   try{
-    await supa.post('ventas_belgrano',{
+    await supa.post(vbTableByWarehouse[vbWarehouse],{
       title:producto,
       sku:document.getElementById('vbAddSku').value.trim()||null,
       quantity:+document.getElementById('vbAddCantidad').value||1,
@@ -2436,7 +2443,7 @@ async function addVentaBelgranoManual(){
       channel:document.getElementById('vbAddCanal').value,
       order_reference:document.getElementById('vbAddOrden').value.trim()||null,
       sold_at:new Date().toISOString(),
-      warehouse:'Belgrano',
+      warehouse:vbWarehouseLabel[vbWarehouse],
       source:'manual',
       estado:'pendiente',
       nota:document.getElementById('vbAddNota').value.trim()||null,
@@ -2739,7 +2746,15 @@ let vbAllRows=[];
 let vbSearchQuery='';
 let vbRangeHours=24;
 let vbCustomSince=null, vbCustomUntil=null;
+let vbWarehouse='belgrano';
 const vbRangeLabel={24:'24 hs',168:'7 días',720:'30 días'};
+
+function setVbWarehouse(w,btn){
+  vbWarehouse=w;
+  document.querySelectorAll('.vb-warehouse').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadVentasBelgrano();
+}
 
 function setVbRange(h,btn){
   vbRangeHours=h;
@@ -2803,7 +2818,7 @@ async function loadVentasBelgrano(manual=false){
 
     const since=vbCustomSince||new Date(Date.now()-vbRangeHours*3600*1000).toISOString();
     const untilFilter=vbCustomUntil?`&sold_at=lte.${vbCustomUntil}`:'';
-    vbAllRows=await supa.get('ventas_belgrano',`sold_at=gte.${since}${untilFilter}&order=sold_at.desc&limit=500`);
+    vbAllRows=await supa.get(vbTableByWarehouse[vbWarehouse],`sold_at=gte.${since}${untilFilter}&order=sold_at.desc&limit=500`);
     renderVentasBelgrano();
     if(dot)dot.className='sync-dot ok';
     if(manual)toast('Actualizado');
