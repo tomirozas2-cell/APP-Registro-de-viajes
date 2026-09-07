@@ -862,26 +862,26 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
   <div class="card">
     <div class="card-title" style="flex-wrap:wrap;row-gap:10px">
       <span class="dot"></span> ÚLTIMAS VENTAS
-      <span style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-        <span class="zone-tabs" style="margin:0;padding:3px">
-          <button class="zone-tab vb-warehouse active" data-w="belgrano" onclick="setVbWarehouse('belgrano',this)">🏪 BELGRANO</button>
-          <button class="zone-tab vb-warehouse" data-w="deposito" onclick="setVbWarehouse('deposito',this)">📦 DEPÓSITO</button>
+      <span style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="zone-tabs" style="margin:0;padding:2px;gap:2px">
+          <button class="zone-tab vb-warehouse active" data-w="belgrano" onclick="setVbWarehouse('belgrano',this)" style="padding:5px 8px;font-size:11px;letter-spacing:.5px" title="Ventas Belgrano">🏪 BEL</button>
+          <button class="zone-tab vb-warehouse" data-w="deposito" onclick="setVbWarehouse('deposito',this)" style="padding:5px 8px;font-size:11px;letter-spacing:.5px" title="Ventas Depósito">📦 DEP</button>
         </span>
-        <span class="zone-tabs" style="margin:0;padding:3px">
-          <button class="zone-tab vb-range active" data-h="24" onclick="setVbRange(24,this)">24 HS</button>
-          <button class="zone-tab vb-range" data-h="168" onclick="setVbRange(168,this)">7 DÍAS</button>
-          <button class="zone-tab vb-range" data-h="720" onclick="setVbRange(720,this)">30 DÍAS</button>
+        <span class="zone-tabs" style="margin:0;padding:2px;gap:2px">
+          <button class="zone-tab vb-range active" data-h="24" onclick="setVbRange(24,this)" style="padding:5px 8px;font-size:11px;letter-spacing:.5px">24H</button>
+          <button class="zone-tab vb-range" data-h="168" onclick="setVbRange(168,this)" style="padding:5px 8px;font-size:11px;letter-spacing:.5px">7D</button>
+          <button class="zone-tab vb-range" data-h="720" onclick="setVbRange(720,this)" style="padding:5px 8px;font-size:11px;letter-spacing:.5px">30D</button>
         </span>
-        <input type="text" id="vbSearch" placeholder="🔎 buscar producto, SKU, orden, nota..." oninput="vbSearchQuery=this.value;renderVentasBelgrano()" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:7px 10px;border-radius:8px;width:220px">
+        <input type="text" id="vbSearch" placeholder="🔎 buscar..." oninput="vbSearchQuery=this.value;renderVentasBelgrano()" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:6px 8px;border-radius:8px;width:150px">
 
-        <span style="display:flex;gap:6px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:5px 8px">
-          <input type="date" id="vbDesde" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:5px 7px;border-radius:5px">
-          <span style="color:var(--muted);font-size:11px">a</span>
-          <input type="date" id="vbHasta" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:5px 7px;border-radius:5px">
-          <button class="btn btn-sm" onclick="setVbRangeCustom()">Filtrar</button>
+        <span style="display:flex;gap:4px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:4px 6px">
+          <input type="date" id="vbDesde" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:4px 5px;border-radius:5px">
+          <span style="color:var(--muted);font-size:10px">a</span>
+          <input type="date" id="vbHasta" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:4px 5px;border-radius:5px">
+          <button class="btn btn-sm" onclick="setVbRangeCustom()" style="padding:5px 8px;font-size:11px">Filtrar</button>
         </span>
-        <span id="vb-lastsync" style="font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none"></span>
-        <button class="btn btn-sm" onclick="loadVentasBelgrano(true)">↻ Actualizar</button>
+        <span id="vb-lastsync" style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;white-space:nowrap"></span>
+        <button class="btn btn-sm" onclick="loadVentasBelgrano(true)" style="padding:5px 8px;font-size:11px;white-space:nowrap">↻ Actualizar</button>
       </span>
     </div>
     <div class="vb-legend">
