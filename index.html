@@ -2530,11 +2530,14 @@ function renderAndreaniEnvios(){
       // Buscador en vivo contra el catalogo oficial completo de Andreani
       // (no solo las sugerencias del matcher automatico) -- asi siempre se
       // puede resolver a mano, incluso cuando el auto-match no encontro
-      // ningun candidato parecido.
-      const pref=(r.match_candidatos&&r.match_candidatos[0])?escHtml(r.match_candidatos[0]):'';
+      // ningun candidato parecido. Arranca vacio a proposito: precargarlo
+      // con la primer sugerencia invitaba a confirmar sin mirar, y esa
+      // sugerencia puede ser de OTRA ciudad que coincide solo por el
+      // nombre de la calle (ej: "25 de Mayo" existe en San Juan y en
+      // Santa Fe).
       const opts=(r.match_candidatos||[]).map(c=>`<option value="${escHtml(c)}">`).join('');
       destino=`<div style="display:flex;gap:4px;align-items:center;min-width:210px">
-        <input type="text" id="andSearch_${r.id}" list="andList_${r.id}" placeholder="Buscar ${r.tipo_envio==='sucursal'?'sucursal':'localidad'}..." value="${pref}" oninput="andreaniBuscarDestino(${r.id},'${r.tipo_envio}',this.value)" style="flex:1;min-width:0;background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 6px;border-radius:5px">
+        <input type="text" id="andSearch_${r.id}" list="andList_${r.id}" placeholder="Buscar ${r.tipo_envio==='sucursal'?'sucursal':'localidad'}..." oninput="andreaniBuscarDestino(${r.id},'${r.tipo_envio}',this.value)" style="flex:1;min-width:0;background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 6px;border-radius:5px">
         <datalist id="andList_${r.id}">${opts}</datalist>
         <button class="btn btn-sm" onclick="resolveAndreaniMatch(${r.id})" title="Confirmar" style="flex-shrink:0;padding:4px 8px">✓</button>
       </div>`;
