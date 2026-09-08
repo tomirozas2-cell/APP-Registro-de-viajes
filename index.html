@@ -832,7 +832,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
       <table>
         <thead>
           <tr>
-            <th>Pedido</th><th>Tipo</th><th style="min-width:150px">Cliente</th><th style="min-width:180px">Destino</th>
+            <th>Pedido</th><th>Tipo</th><th style="min-width:150px">Cliente</th><th style="min-width:230px">Destino</th>
             <th style="width:70px">Peso (g)</th><th style="width:60px">Alto</th><th style="width:60px">Ancho</th><th style="width:70px">Prof.</th>
             <th>Estado</th><th style="width:110px">Acción</th>
           </tr>
@@ -2511,10 +2511,18 @@ function renderAndreaniEnvios(){
     const cliente=r.nombre?escHtml(`${r.nombre} ${r.apellido||''}`.trim()):'—';
 
     let destino;
-    if(r.match_status==='revisar' && r.match_candidatos && r.match_candidatos.length){
-      const opts=r.match_candidatos.map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
-      destino=`<select id="andCand_${r.id}" style="background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 5px;border-radius:5px;max-width:220px">${opts}</select>
-        <button class="btn btn-sm" onclick="resolveAndreaniMatch(${r.id})" style="margin-left:4px;padding:2px 6px">✓</button>`;
+    if(r.match_status==='revisar'){
+      // Buscador en vivo contra el catalogo oficial completo de Andreani
+      // (no solo las sugerencias del matcher automatico) -- asi siempre se
+      // puede resolver a mano, incluso cuando el auto-match no encontro
+      // ningun candidato parecido.
+      const pref=(r.match_candidatos&&r.match_candidatos[0])?escHtml(r.match_candidatos[0]):'';
+      const opts=(r.match_candidatos||[]).map(c=>`<option value="${escHtml(c)}">`).join('');
+      destino=`<div style="display:flex;gap:4px;align-items:center;min-width:210px">
+        <input type="text" id="andSearch_${r.id}" list="andList_${r.id}" placeholder="Buscar ${r.tipo_envio==='sucursal'?'sucursal':'localidad'}..." value="${pref}" oninput="andreaniBuscarDestino(${r.id},'${r.tipo_envio}',this.value)" style="flex:1;min-width:0;background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 6px;border-radius:5px">
+        <datalist id="andList_${r.id}">${opts}</datalist>
+        <button class="btn btn-sm" onclick="resolveAndreaniMatch(${r.id})" title="Confirmar" style="flex-shrink:0;padding:4px 8px">✓</button>
+      </div>`;
     } else if(r.match_valor){
       destino=escHtml(r.match_valor);
     } else {
@@ -2557,11 +2565,30 @@ async function saveAndreaniMedidas(id){
   }
 }
 
+let andSearchTimers={};
+function andreaniBuscarDestino(id,tipo,q){
+  clearTimeout(andSearchTimers[id]);
+  const query=q.trim();
+  if(query.length<2)return;
+  andSearchTimers[id]=setTimeout(async()=>{
+    try{
+      const table=tipo==='sucursal'?'andreani_sucursales_ref':'andreani_localidades_ref';
+      const col=tipo==='sucursal'?'nombre':'valor';
+      const rows=await supa.get(table,`${col}=ilike.${encodeURIComponent('*'+query+'*')}&order=${col}&limit=20`);
+      const dl=document.getElementById(`andList_${id}`);
+      if(dl)dl.innerHTML=rows.map(r=>`<option value="${escHtml(r[col])}">`).join('');
+    }catch(e){
+      // sigue mostrando las opciones ya cargadas (sugerencias del matcher o busqueda anterior)
+    }
+  },300);
+}
+
 async function resolveAndreaniMatch(id){
-  const sel=document.getElementById(`andCand_${id}`);
-  if(!sel||!sel.value)return;
+  const inp=document.getElementById(`andSearch_${id}`);
+  const val=inp?inp.value.trim():'';
+  if(!val){toast('Escribí o elegí un destino de la lista','error');return}
   try{
-    await supa.patch('andreani_envios',id,{match_valor:sel.value, match_status:'listo', match_candidatos:null});
+    await supa.patch('andreani_envios',id,{match_valor:val, match_status:'listo', match_candidatos:null});
     toast('Destino confirmado');
     loadAndreaniEnvios();
   }catch(e){
@@ -2570,7 +2597,7 @@ async function resolveAndreaniMatch(id){
 }
 
 async function deleteAndreaniEnvio(id){
-  if(!confirm('¿Eliminar este envío de la lista?'))return;
+  if(!confirm('¿Eliminar este pedido de Andreani? OJO: esto NO es un refresh — se saca para siempre, no vuelve a aparecer solo. Usalo solo si el pedido ya salió por otro lado o no corresponde despacharlo.'))return;
   try{
     // No se borra la fila: si se borra, el sync horario la vuelve a traer
     // porque deja de figurar como "ya procesada". Se marca resuelta en su
@@ -2698,8 +2725,14 @@ async function esperarExportAndreani(desde,intento=0){
   }catch(e){
     // sigue reintentando
   }
-  if(intento>=20){ // ~100s de espera total
-    toast('Está tardando más de lo normal — probá "Descargar Excel" de nuevo en un rato','error');
+  if(intento>=36){ // ~3 min de espera total
+    // Esto NO significa que fallo ni que se perdio la lista: el excel puede
+    // haber terminado de generarse recien despues de este timeout (GitHub
+    // Actions a veces tarda mas de lo normal). Los pedidos siguen en la
+    // base tal cual estaban -- apretar "Actualizar" alcanza para verlos de
+    // nuevo; solo hace falta reintentar la descarga si de verdad no aparecio
+    // ningun excel nuevo en Storage.
+    toast('Está tardando más de lo normal, pero los pedidos siguen ahí — apretá "Actualizar" en un rato y volvé a intentar "Descargar Excel"','error');
     andreaniExportTriggering=false;
     btn.disabled=false;
     return;
