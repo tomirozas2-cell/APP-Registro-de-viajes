@@ -2592,7 +2592,12 @@ function andreaniBuscarDestino(id,tipo,q){
     try{
       const table=tipo==='sucursal'?'andreani_sucursales_ref':'andreani_localidades_ref';
       const col=tipo==='sucursal'?'nombre':'valor';
-      const rows=await supa.get(table,`${col}=ilike.${encodeURIComponent('*'+query+'*')}&order=${col}&limit=20`);
+      // Para sucursales, los "Punto Andreani HOP" (casilleros de retiro en
+      // comercios) tienen nombres de calle que se repiten en un monton de
+      // ciudades (ej. "Santa Fe", "San Martin") y por orden alfabetico
+      // tapan a la sucursal real -- van despues.
+      const orderQs=tipo==='sucursal'?'order=es_hop.asc,nombre.asc':`order=${col}`;
+      const rows=await supa.get(table,`${col}=ilike.${encodeURIComponent('*'+query+'*')}&${orderQs}&limit=20`);
       const dl=document.getElementById(`andList_${id}`);
       if(dl)dl.innerHTML=rows.map(r=>`<option value="${escHtml(r[col])}">`).join('');
     }catch(e){
