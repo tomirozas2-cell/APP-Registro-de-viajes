@@ -2489,11 +2489,20 @@ async function loadAndreaniEnvios(manual=false){
 }
 
 function andreaniEstadoBadge(r){
-  if(r.match_status==='error')return `<span class="pack-action pack-send" title="${escHtml(r.match_error||'')}">⚠ ERROR</span>`;
+  // El texto de match_error se muestra siempre visible (no solo en el
+  // tooltip) -- por ejemplo cuando Entelequia tiene el pedido marcado
+  // como "Envío - Moto" pero igual se carga a mano para mandarlo por
+  // Andreani, asi no pasa desapercibido que hay que confirmarlo.
+  if(r.match_status==='error'){
+    return `<span class="pack-action pack-send">⚠ ERROR</span><br><span style="font-size:10px;color:var(--unk)">${escHtml(r.match_error||'')}</span>`;
+  }
   if(!r.nombre)return '<span class="pack-none">⏳ buscando pedido...</span>';
-  if(r.match_status==='revisar')return '<span class="pack-action pack-ship">🔎 REVISAR</span>';
-  if(r.peso_gr==null)return '<span class="pack-action pack-send">✎ FALTA PESO</span>';
-  return '<span class="pack-action pack-multi">✓ LISTO</span>';
+  let base;
+  if(r.match_status==='revisar')base='<span class="pack-action pack-ship">🔎 REVISAR</span>';
+  else if(r.peso_gr==null)base='<span class="pack-action pack-send">✎ FALTA PESO</span>';
+  else base='<span class="pack-action pack-multi">✓ LISTO</span>';
+  const aviso=r.match_error?`<br><span style="font-size:10px;color:var(--c3);font-weight:700">⚠ ${escHtml(r.match_error)}</span>`:'';
+  return base+aviso;
 }
 
 function renderAndreaniEnvios(){
