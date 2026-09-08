@@ -2466,6 +2466,11 @@ let andAllRows=[];
 async function loadAndreaniEnvios(manual=false){
   const dot=document.getElementById('sync-andreani');
   if(dot)dot.className='sync-dot loading';
+  // "Actualizar" no solo releia lo que ya estaba en la base -- ahora
+  // tambien dispara una busqueda real (sujeta al mismo cooldown de 3 min),
+  // asi los pedidos que quedan "buscando pedido..." no dependen de esperar
+  // la corrida horaria para destrabarse.
+  if(manual)triggerAndreaniLookup();
   try{
     const [status]=await supa.get('sync_status','id=eq.main&select=last_run_at');
     if(status && status.last_run_at){
