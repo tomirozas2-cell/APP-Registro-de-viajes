@@ -2630,21 +2630,54 @@ async function triggerAndreaniLookup(){
   if(andreaniLookupTriggering)return;
   andreaniLookupTriggering=true;
   try{
-    const r=await fetch(`${SUPA_URL}/functions/v1/trigger-sync`,{method:'POST',headers:await getAuthHeaders()});
+    // Camino liviano (sin Playwright/ML, solo Entelequia por HTTP directo)
+    // -- tarda segundos en vez del ~1 min del sync completo.
+    const desde=new Date().toISOString();
+    const r=await fetch(`${SUPA_URL}/functions/v1/trigger-andreani-sync`,{method:'POST',headers:await getAuthHeaders()});
     const data=await r.json().catch(()=>({}));
     if(r.status===429){
-      toast(`Ya se está buscando — esperá ${data.waitSec||60}s y volvé a apretar`,'error');
-    } else if(r.ok && data.ok){
-      toast('🔎 Buscando el pedido en Entelequia... (~1 min)');
-      setTimeout(()=>loadAndreaniEnvios(false),55000);
-    } else {
-      toast('No se pudo forzar la búsqueda, va a correr en la próxima corrida horaria','error');
+      toast(`Ya se está buscando — esperá ${data.waitSec||30}s y volvé a apretar`,'error');
+      andreaniLookupTriggering=false;
+      return;
     }
+    if(!r.ok || !data.ok){
+      toast('No se pudo forzar la búsqueda, va a correr en la próxima corrida horaria','error');
+      andreaniLookupTriggering=false;
+      return;
+    }
+    toast('🔎 Buscando pedido(s) en Entelequia...');
+    esperarAndreaniLookup(desde);
   }catch(e){
     // si falla el disparo manual, el sync horario de fondo lo va a procesar igual
-  }finally{
     andreaniLookupTriggering=false;
   }
+}
+
+async function esperarAndreaniLookup(desde,intento=0){
+  try{
+    const [status]=await supa.get('sync_status','id=eq.andreani_only&select=last_success_at,last_error,last_run_at');
+    const desdeMs=new Date(desde).getTime();
+    const listo=status && status.last_success_at && new Date(status.last_success_at).getTime()>desdeMs;
+    const fallo=status && status.last_error && status.last_run_at && new Date(status.last_run_at).getTime()>desdeMs;
+    if(listo){
+      loadAndreaniEnvios(false);
+      andreaniLookupTriggering=false;
+      return;
+    }
+    if(fallo){
+      toast('Error buscando: '+status.last_error,'error');
+      andreaniLookupTriggering=false;
+      return;
+    }
+  }catch(e){
+    // sigue reintentando
+  }
+  if(intento>=15){ // ~30s de espera total
+    loadAndreaniEnvios(false); // releemos igual, puede haber terminado justo despues
+    andreaniLookupTriggering=false;
+    return;
+  }
+  setTimeout(()=>esperarAndreaniLookup(desde,intento+1),2000);
 }
 
 async function addAndreaniManual(){
