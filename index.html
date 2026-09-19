@@ -17,7 +17,7 @@
   --red:#e63329; --red2:#ff5a35;
   --text:#ededf0; --muted:#5a5a68; --muted2:#888896;
   --caba:#f472b6; --c1:#60a5fa; --c2:#4ade80; --c3:#fbbf24;
-  --unk:#f87171; --adf:#f97316; --lucho:#a78bfa; --paid:#4ade80;
+  --unk:#f87171; --adf:#f97316; --lucho:#a78bfa; --paid:#4ade80; --turbo:#22d3ee;
   --tbl-fg:#ccc; --hover-tint:rgba(255,255,255,.03); --hover-tint2:rgba(255,255,255,.04);
   --badge-ml-fg:#bcdcff; --badge-web-fg:#c3f7d3; --badge-otro-fg:#ffe4a8; --badge-amt-fg:#ffcf5c; --badge-ship-fg:#7dd3fc;
   --row-sep:rgba(255,255,255,.04); --row-ok-bg:rgba(74,222,128,.14); --row-bad-bg:rgba(248,113,113,.14);
@@ -112,12 +112,12 @@ body:has(#panel-ventas.active) main,body:has(#panel-mercaderia.active) main{max-
 .card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--red)}
 
 /* TARIFAS */
-.tarifas-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tarifas-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .tarifa-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden}
 .tarifa-box::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.tarifa-box[data-z="CABA"]::after{background:var(--caba)}.tarifa-box[data-z="C1"]::after{background:var(--c1)}.tarifa-box[data-z="C2"]::after{background:var(--c2)}.tarifa-box[data-z="C3"]::after{background:var(--c3)}
+.tarifa-box[data-z="CABA"]::after{background:var(--caba)}.tarifa-box[data-z="C1"]::after{background:var(--c1)}.tarifa-box[data-z="C2"]::after{background:var(--c2)}.tarifa-box[data-z="C3"]::after{background:var(--c3)}.tarifa-box[data-z="TURBO"]::after{background:var(--turbo)}
 .tarifa-zone{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;margin-bottom:8px}
-.tarifa-box[data-z="CABA"] .tarifa-zone{color:var(--caba)}.tarifa-box[data-z="C1"] .tarifa-zone{color:var(--c1)}.tarifa-box[data-z="C2"] .tarifa-zone{color:var(--c2)}.tarifa-box[data-z="C3"] .tarifa-zone{color:var(--c3)}
+.tarifa-box[data-z="CABA"] .tarifa-zone{color:var(--caba)}.tarifa-box[data-z="C1"] .tarifa-zone{color:var(--c1)}.tarifa-box[data-z="C2"] .tarifa-zone{color:var(--c2)}.tarifa-box[data-z="C3"] .tarifa-zone{color:var(--c3)}.tarifa-box[data-z="TURBO"] .tarifa-zone{color:var(--turbo)}
 .tarifa-row{display:flex;align-items:center;gap:5px}
 .tarifa-prefix{color:var(--muted);font-size:15px;font-weight:600}
 input[type=number]{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:19px;padding:5px 8px;border-radius:6px;width:100%;-moz-appearance:textfield;transition:border-color .2s,box-shadow .2s}
@@ -164,7 +164,7 @@ select.field-select option{background:var(--s2)}
 .btn-dl:hover{border-color:var(--c2);color:var(--c2)}
 
 /* STATS */
-.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px}
 .stat{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;line-height:1}
 .stat-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:3px}
@@ -626,6 +626,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
       <div class="tarifa-box" data-z="C1"><div class="tarifa-zone">CORDÓN 1</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="adf-c1" value="3800" min="0" onchange="saveTarifas()"></div></div>
       <div class="tarifa-box" data-z="C2"><div class="tarifa-zone">CORDÓN 2</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="adf-c2" value="4500" min="0" onchange="saveTarifas()"></div></div>
       <div class="tarifa-box" data-z="C3"><div class="tarifa-zone">CORDÓN 3</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="adf-c3" value="7100" min="0" onchange="saveTarifas()"></div></div>
+      <div class="tarifa-box" data-z="TURBO"><div class="tarifa-zone">TURBO</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="adf-turbo" value="4800" min="0" onchange="saveTarifas()"></div></div>
     </div>
     <!-- LUCHO tarifas -->
     <div id="tarifas-LUCHO" class="tarifas-grid" style="display:none">
@@ -633,6 +634,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
       <div class="tarifa-box" data-z="C1"><div class="tarifa-zone">CORDÓN 1</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="lucho-c1" value="3800" min="0" onchange="saveTarifas()"></div></div>
       <div class="tarifa-box" data-z="C2"><div class="tarifa-zone">CORDÓN 2</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="lucho-c2" value="4500" min="0" onchange="saveTarifas()"></div></div>
       <div class="tarifa-box" data-z="C3"><div class="tarifa-zone">CORDÓN 3</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="lucho-c3" value="7100" min="0" onchange="saveTarifas()"></div></div>
+      <div class="tarifa-box" data-z="TURBO"><div class="tarifa-zone">TURBO</div><div class="tarifa-row"><span class="tarifa-prefix">$</span><input type="number" id="lucho-turbo" value="4800" min="0" onchange="saveTarifas()"></div></div>
     </div>
     <p style="font-size:11px;color:var(--muted);margin-top:10px;font-style:italic">Las tarifas se aplican automáticamente según la mensajería seleccionada.</p>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px">
@@ -685,6 +687,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
         <div class="stat"><div class="stat-val" id="st-c1" style="color:var(--c1)">—</div><div class="stat-lbl">Cordón 1</div></div>
         <div class="stat"><div class="stat-val" id="st-c2" style="color:var(--c2)">—</div><div class="stat-lbl">Cordón 2</div></div>
         <div class="stat"><div class="stat-val" id="st-c3" style="color:var(--c3)">—</div><div class="stat-lbl">Cordón 3</div></div>
+        <div class="stat"><div class="stat-val" id="st-turbo" style="color:var(--turbo)">—</div><div class="stat-lbl">Turbo</div></div>
       </div>
 
       <!-- Unknown resolver -->
@@ -1188,8 +1191,8 @@ function switchTarifaTab(m){
 
 async function saveTarifas(){
   const val = {
-    ADF:   {CABA:+document.getElementById('adf-caba').value,   C1:+document.getElementById('adf-c1').value,   C2:+document.getElementById('adf-c2').value,   C3:+document.getElementById('adf-c3').value},
-    LUCHO: {CABA:+document.getElementById('lucho-caba').value, C1:+document.getElementById('lucho-c1').value, C2:+document.getElementById('lucho-c2').value, C3:+document.getElementById('lucho-c3').value}
+    ADF:   {CABA:+document.getElementById('adf-caba').value,   C1:+document.getElementById('adf-c1').value,   C2:+document.getElementById('adf-c2').value,   C3:+document.getElementById('adf-c3').value,   TURBO:+document.getElementById('adf-turbo').value},
+    LUCHO: {CABA:+document.getElementById('lucho-caba').value, C1:+document.getElementById('lucho-c1').value, C2:+document.getElementById('lucho-c2').value, C3:+document.getElementById('lucho-c3').value, TURBO:+document.getElementById('lucho-turbo').value}
   };
   // Always save to localStorage as backup
   localStorage.setItem('adf_tarifas', JSON.stringify(val));
@@ -1246,16 +1249,19 @@ async function loadTarifas(){
     document.getElementById('adf-c1').value     = val.ADF.C1    || 3800;
     document.getElementById('adf-c2').value     = val.ADF.C2    || 4500;
     document.getElementById('adf-c3').value     = val.ADF.C3    || 7100;
+    document.getElementById('adf-turbo').value  = val.ADF.TURBO || 4800;
     document.getElementById('lucho-caba').value = val.LUCHO.CABA|| 2700;
     document.getElementById('lucho-c1').value   = val.LUCHO.C1  || 3800;
     document.getElementById('lucho-c2').value   = val.LUCHO.C2  || 4500;
     document.getElementById('lucho-c3').value   = val.LUCHO.C3  || 7100;
+    document.getElementById('lucho-turbo').value= val.LUCHO.TURBO||4800;
   } else {
     ['adf','lucho'].forEach(m=>{
       document.getElementById(m+'-caba').value = val.CABA || 2700;
       document.getElementById(m+'-c1').value   = val.C1   || 3800;
       document.getElementById(m+'-c2').value   = val.C2   || 4500;
       document.getElementById(m+'-c3').value   = val.C3   || 7100;
+      document.getElementById(m+'-turbo').value= val.TURBO|| 4800;
     });
   }
 }
@@ -1268,6 +1274,7 @@ function getTarifas(){
     C1:   +document.getElementById(prefix+'-c1').value   || 3800,
     C2:   +document.getElementById(prefix+'-c2').value   || 4500,
     C3:   +document.getElementById(prefix+'-c3').value   || 7100,
+    TURBO:+document.getElementById(prefix+'-turbo').value|| 4800,
   };
 }
 
@@ -1437,6 +1444,9 @@ async function processFile(){
       // Detect CP column (for La Matanza cordon resolution)
       const cpIdx=origHeaders.findIndex(h=>normAcc(h).trim()==='cp');
 
+      // Detect TIPO column (for envíos TURBO, tarifa fija sin importar la zona)
+      const tipoIdx=origHeaders.findIndex(h=>normAcc(h).trim()==='tipo');
+
       // Detect mensajeria column
       const mensIdx=origHeaders.findIndex(h=>normAcc(h).includes('mensajeria'));
       const dataRows=rows.slice(1).filter(r=>r.some(c=>c!==''));
@@ -1446,7 +1456,7 @@ async function processFile(){
         const hasMens1=dataRows.some(r=>detectMens(r[mensIdx])==='LUCHO');
         const hasMens3=dataRows.some(r=>detectMens(r[mensIdx])==='ADF');
         if(hasMens1||hasMens3){
-          runClassification(dataRows,locIdx,mensIdx,true,cpIdx); // isSplit=true
+          runClassification(dataRows,locIdx,mensIdx,true,cpIdx,tipoIdx); // isSplit=true
           return;
         }
       }
@@ -1458,7 +1468,7 @@ async function processFile(){
       }
 
       // Manual ADF / LUCHO
-      runClassification(dataRows,locIdx,-1,false,cpIdx);
+      runClassification(dataRows,locIdx,-1,false,cpIdx,tipoIdx);
     }catch(err){alert('Error: '+err.message);console.error(err)}
   };
   reader.readAsArrayBuffer(currentFile);
@@ -1471,11 +1481,14 @@ function getTarifasFor(m){
     C1:+document.getElementById(prefix+'-c1').value||3800,
     C2:+document.getElementById(prefix+'-c2').value||4500,
     C3:+document.getElementById(prefix+'-c3').value||7100,
+    TURBO:+document.getElementById(prefix+'-turbo').value||4800,
   };
 }
 
-function runClassification(dataRows,locIdx,mensIdx,isSplit,cpIdx){
-  const stats={CABA:0,C1:0,C2:0,C3:0,unk:0};
+function isTurboTipo(val){return normAcc(String(val)).includes('turbo')}
+
+function runClassification(dataRows,locIdx,mensIdx,isSplit,cpIdx,tipoIdx){
+  const stats={CABA:0,C1:0,C2:0,C3:0,unk:0,turbo:0};
   const unknowns=new Set();
 
   processedData=dataRows.map(row=>{
@@ -1484,9 +1497,11 @@ function runClassification(dataRows,locIdx,mensIdx,isSplit,cpIdx){
     const tarifas=getTarifasFor(rowMens);
     const cp = (cpIdx!==undefined && cpIdx>=0) ? row[cpIdx] : undefined;
     const zone=classify(row[locIdx], cp);
-    const valor=zone?tarifas[zone]:null;
+    const turbo = (tipoIdx!==undefined && tipoIdx>=0) ? isTurboTipo(row[tipoIdx]) : false;
+    const valor = turbo ? tarifas.TURBO : (zone?tarifas[zone]:null);
     if(zone)stats[zone]++;else{stats.unk++;unknowns.add(String(row[locIdx]))}
-    return{row,zone,valor,loc:String(row[locIdx]),mens:rowMens}
+    if(turbo)stats.turbo++;
+    return{row,zone,valor,loc:String(row[locIdx]),mens:rowMens,turbo}
   });
 
   document.getElementById('st-total').textContent=processedData.length;
@@ -1494,6 +1509,7 @@ function runClassification(dataRows,locIdx,mensIdx,isSplit,cpIdx){
   document.getElementById('st-c1').textContent=stats.C1;
   document.getElementById('st-c2').textContent=stats.C2;
   document.getElementById('st-c3').textContent=stats.C3;
+  document.getElementById('st-turbo').textContent=stats.turbo;
 
   renderUnknownResolver(unknowns);
 
@@ -1568,10 +1584,12 @@ function recalcWithAssignments(){
     const ws=wb.Sheets[wb.SheetNames[0]];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
     const locIdx=origHeaders.findIndex(h=>normAcc(h).includes('localidad'));
+    const cpIdx=origHeaders.findIndex(h=>normAcc(h).trim()==='cp');
+    const tipoIdx=origHeaders.findIndex(h=>normAcc(h).trim()==='tipo');
     const mensIdx=origHeaders.findIndex(h=>normAcc(h).includes('mensajeria'));
     const dataRows=rows.slice(1).filter(r=>r.some(c=>c!==''));
     const isSplit=mensIdx>=0 && dataRows.some(r=>detectMens(r[mensIdx])!==null);
-    runClassification(dataRows,locIdx,mensIdx,isSplit);
+    runClassification(dataRows,locIdx,mensIdx,isSplit,cpIdx,tipoIdx);
   };
   reader.readAsArrayBuffer(currentFile);
 }
@@ -1599,7 +1617,7 @@ function buildTable(headers,data){
   const trh=document.createElement('tr');
   showH.forEach(h=>{const th=document.createElement('th');th.textContent=h;trh.appendChild(th)});
   thead.appendChild(trh);
-  data.forEach(({row,zone,valor,mens})=>{
+  data.forEach(({row,zone,valor,mens,turbo})=>{
     const tr=document.createElement('tr');
     showIdx.forEach(i=>{const td=document.createElement('td');td.textContent=row[i]??'';tr.appendChild(td)});
     // Mensajeria badge
@@ -1609,7 +1627,7 @@ function buildTable(headers,data){
     tr.appendChild(tdM);
     const zc=zone||'UNK';
     const tdZ=document.createElement('td');tdZ.innerHTML=`<span class="zbadge z${zc}">${zoneLabel(zone)}</span>`;tr.appendChild(tdZ);
-    const tdV=document.createElement('td');tdV.className='val-cell';tdV.textContent=valor?`$${valor.toLocaleString('es-AR')}`:'—';tr.appendChild(tdV);
+    const tdV=document.createElement('td');tdV.className='val-cell';tdV.textContent=(valor?`$${valor.toLocaleString('es-AR')}`:'—')+(turbo?' ⚡':'');tr.appendChild(tdV);
     tbody.appendChild(tr);
   });
 }
