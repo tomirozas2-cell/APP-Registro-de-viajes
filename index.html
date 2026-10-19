@@ -3430,7 +3430,7 @@ function renderEstadisticas(ventas,merc){
 // msg_mensajes; se responde por meta-mensajes. Mientras el panel está abierto
 // se refresca cada pocos segundos; el contador del menú, cada minuto.
 const MSG_POLL_MS=8000, MSG_BADGE_MS=60000, MSG_H24=24*3600e3, MSG_D7=7*24*3600e3;
-const msgState={convs:[],open:null,msgs:[],filtro:'todas',busqueda:'',timer:null,sending:false,sinAcceso:false};
+const msgState={convs:[],open:null,msgs:[],filtro:'todas',busqueda:'',timer:null,sending:false,sinAcceso:false,pend:[]};
 
 async function msgApi(path,opts={}){
   const H=await getAuthHeaders();
@@ -3584,6 +3584,14 @@ function renderMsgThread(forzarScroll){
     const quien=m.direccion==='out'&&m.enviado_por&&m.enviado_por!=='sistema'?escHtml(m.enviado_por.split('@')[0])+' · ':'';
     html+=`<div class="msg-bubble ${m.direccion}">${m.texto?escHtml(m.texto):''}${msgAdjuntos(m.adjuntos)}<div class="msg-meta">${quien}${hora}</div></div>`;
   }
+  // Mensajes recién escritos que Meta todavía no confirmó: se muestran al
+  // instante y desaparecen cuando el real ya está en la base.
+  const ids=new Set(msgState.msgs.map(m=>m.id));
+  msgState.pend=msgState.pend.filter(p=>!(p.mid&&ids.has(p.mid)));
+  for(const p of msgState.pend.filter(p=>p.conv===msgState.open)){
+    const hora=new Date(p.at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    html+=`<div class="msg-bubble out" style="opacity:.6">${escHtml(p.texto)}<div class="msg-meta">enviando… · ${hora}</div></div>`;
+  }
   th.innerHTML=html||'<div class="msg-empty">Sin mensajes guardados.</div>';
   if(forzarScroll||cercaDelFinal)th.scrollTop=th.scrollHeight;
   renderMsgAviso();
@@ -3610,21 +3618,23 @@ function msgKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();msgEnviar
 async function msgEnviar(){
   const ta=document.getElementById('msgText');
   const texto=(ta?.value||'').trim();
-  if(!texto||msgState.sending||!msgState.open)return;
-  msgState.sending=true;
-  const btn=document.getElementById('msgSendBtn');btn.disabled=true;btn.textContent='...';
+  if(!texto||!msgState.open||ta.disabled)return;
+  const p={conv:msgState.open,texto,at:Date.now(),mid:null};
+  msgState.pend.push(p);
+  ta.value='';msgAutoGrow(ta);ta.focus();
+  renderMsgThread(true);
   try{
-    await msgFn({accion:'enviar',conversacion_id:msgState.open,texto});
-    ta.value='';
-    msgAutoGrow(ta);
-    await loadMensajes();
-    await msgLoadThread(true);
+    const r=await msgFn({accion:'enviar',conversacion_id:p.conv,texto});
+    p.mid=r.id;
+    if(msgState.open===p.conv)await msgLoadThread(true);
+    loadMensajes();
   }catch(e){
-    toast(e.message,'error');
-  }finally{
-    msgState.sending=false;
-    const b=document.getElementById('msgSendBtn');if(b){b.disabled=false;b.textContent='ENVIAR'}
-    document.getElementById('msgText')?.focus();
+    msgState.pend=msgState.pend.filter(x=>x!==p);
+    if(msgState.open===p.conv){
+      renderMsgThread(false);
+      const t=document.getElementById('msgText');if(t&&!t.value){t.value=texto;msgAutoGrow(t)}
+    }
+    toast('No se envió: '+e.message,'error');
   }
 }
 
