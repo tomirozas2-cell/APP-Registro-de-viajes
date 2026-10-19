@@ -503,6 +503,76 @@ tbody td{padding:5px 9px;font-family:'DM Mono',monospace;font-size:11px;color:va
   .card-title{font-size:14px}
   .btn-dl,.btn-primary{font-size:15px}
 }
+/* MENSAJES: bandeja Messenger + Instagram */
+body:has(#panel-mensajes.active) main{max-width:1800px}
+@media (min-width:769px){
+  body:has(#panel-mensajes.active) .app{height:100vh;overflow:hidden}
+  body:has(#panel-mensajes.active) main{height:100vh;overflow:hidden;display:flex;flex-direction:column;padding:18px 30px 14px}
+  #panel-mensajes.active{display:flex;flex-direction:column;flex:1;min-height:0}
+  #panel-mensajes .page-header{margin-bottom:10px;flex-shrink:0}
+  #panel-mensajes .page-header h2{font-size:24px}
+}
+.nav-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center}
+.nav-badge.show{display:flex}
+body.sidebar-collapsed .nav-link .nav-badge{position:absolute;top:3px;right:3px;margin:0}
+.msg-header-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.msg-wrap{display:grid;grid-template-columns:340px 1fr;flex:1;min-height:0;background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.msg-side{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--border)}
+.msg-tools{padding:10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.msg-tools input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 10px;border-radius:8px;width:100%}
+.msg-tools input:focus{outline:none;border-color:var(--red)}
+.msg-filters{display:flex;gap:4px}
+.msg-filter{flex:1;padding:5px 4px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--muted2);cursor:pointer}
+.msg-filter.active{background:var(--s3);color:var(--text);border-color:var(--border2)}
+.msg-list{flex:1;overflow-y:auto;min-height:0}
+.msg-item{display:flex;gap:10px;padding:11px 12px;cursor:pointer;border-bottom:1px solid var(--row-sep);align-items:center}
+.msg-item:hover{background:var(--hover-tint2)}
+.msg-item.active{background:var(--s2)}
+.msg-avatar{position:relative;width:40px;height:40px;flex-shrink:0;border-radius:50%;background:var(--s3);color:var(--muted2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;overflow:visible}
+.msg-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.msg-plat{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;border:2px solid var(--s1);font-size:8px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center}
+.msg-plat.messenger{background:#0866ff}
+.msg-plat.instagram{background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)}
+.msg-item-body{flex:1;min-width:0}
+.msg-item-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.msg-item-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-item-time{font-size:10px;color:var(--muted);flex-shrink:0}
+.msg-item-bottom{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:2px}
+.msg-item-text{font-size:12px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-item.unread .msg-item-name,.msg-item.unread .msg-item-text{color:var(--text);font-weight:700}
+.msg-unread{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg-empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:13px}
+.msg-chat{display:flex;flex-direction:column;min-height:0;min-width:0}
+.msg-chat-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.msg-chat-head .msg-avatar{width:34px;height:34px;font-size:13px}
+.msg-chat-name{font-size:14px;font-weight:600}
+.msg-chat-sub{font-size:11px;color:var(--muted2)}
+.msg-back{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:0 6px 0 0}
+.msg-thread{flex:1;overflow-y:auto;min-height:0;padding:16px 14px;display:flex;flex-direction:column;gap:6px}
+.msg-day{align-self:center;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
+.msg-bubble{max-width:72%;padding:8px 11px;border-radius:14px;font-size:13px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.msg-bubble.in{align-self:flex-start;background:var(--s3);border-bottom-left-radius:4px}
+.msg-bubble.out{align-self:flex-end;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border-bottom-right-radius:4px}
+.msg-meta{font-size:10px;opacity:.7;margin-top:3px;text-align:right}
+.msg-bubble img{display:block;max-width:240px;max-height:260px;border-radius:8px;margin:2px 0}
+.msg-bubble a{color:inherit;text-decoration:underline}
+.msg-window{padding:7px 14px;font-size:11px;border-top:1px solid var(--border);color:var(--c3);background:rgba(251,191,36,.07)}
+.msg-window.closed{color:var(--unk);background:rgba(248,113,113,.08)}
+.msg-compose{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border);align-items:flex-end}
+.msg-compose textarea{flex:1;resize:none;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 11px;border-radius:10px;max-height:140px;min-height:40px;line-height:1.4}
+.msg-compose textarea:focus{outline:none;border-color:var(--red)}
+.msg-send{border:none;border-radius:10px;padding:0 16px;height:40px;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;cursor:pointer}
+.msg-send:disabled{opacity:.45;cursor:default}
+.msg-placeholder{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;padding:20px;text-align:center}
+@media (max-width:768px){
+  .msg-wrap{grid-template-columns:1fr;height:calc(100vh - 190px);min-height:420px}
+  .msg-wrap .msg-chat{display:none}
+  .msg-wrap.chat-open .msg-side{display:none}
+  .msg-wrap.chat-open .msg-chat{display:flex}
+  .msg-back{display:block}
+  .msg-bubble{max-width:85%}
+  .msg-bubble img{max-width:180px}
+}
 </style>
 </head>
 <body>
@@ -602,6 +672,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
     <button class="nav-link" data-panel="andreani" onclick="showPanel('andreani',this)" title="Excel Andreani"><span class="icon">🏷️</span><span class="nav-label"> Excel Andreani</span><span class="sync-dot" id="sync-andreani"></span></button>
     <button class="nav-link" data-panel="ventas" onclick="showPanel('ventas',this)" title="Ventas Belgrano"><span class="icon">🏪</span><span class="nav-label"> Ventas Belgrano</span><span class="sync-dot" id="sync-ventas"></span></button>
     <button class="nav-link" data-panel="mercaderia" onclick="showPanel('mercaderia',this)" title="Mercadería Suelta Belgrano"><span class="icon">📦</span><span class="nav-label"> Mercadería Suelta</span><span class="sync-dot" id="sync-mercaderia"></span></button>
+    <button class="nav-link" data-panel="mensajes" onclick="showPanel('mensajes',this)" title="Mensajes"><span class="icon">💬</span><span class="nav-label"> Mensajes</span><span class="nav-badge" id="msgBadge"></span></button>
     <button class="nav-link" data-panel="estadisticas" onclick="showPanel('estadisticas',this)" title="Estadísticas Material Belgrano"><span class="icon">📊</span><span class="nav-label"> Estadísticas Belgrano</span><span class="sync-dot" id="sync-estadisticas"></span></button>
   </div>
   <div class="nav-bottom">Supabase · v4.1</div>
@@ -1078,6 +1149,31 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
   </div>
 </div>
 
+<!-- ═══ MENSAJES ═══ -->
+<div class="panel" id="panel-mensajes">
+  <div class="page-header msg-header-row">
+    <div><h2>MENSAJES</h2><p>Messenger e Instagram de Entelequia en un solo lugar.</p></div>
+    <button class="btn btn-sm" id="msgSyncBtn" onclick="msgSincronizar()" title="Trae de Meta las conversaciones recientes, por si se perdió algún mensaje">↻ Traer historial</button>
+  </div>
+  <div class="msg-wrap" id="msgWrap">
+    <div class="msg-side">
+      <div class="msg-tools">
+        <input type="search" id="msgSearch" placeholder="Buscar por nombre o mensaje..." oninput="msgState.busqueda=this.value;renderMsgList()">
+        <div class="msg-filters">
+          <button class="msg-filter active" data-f="todas" onclick="msgSetFiltro('todas',this)">Todas</button>
+          <button class="msg-filter" data-f="no_leidas" onclick="msgSetFiltro('no_leidas',this)">No leídas</button>
+          <button class="msg-filter" data-f="messenger" onclick="msgSetFiltro('messenger',this)">Messenger</button>
+          <button class="msg-filter" data-f="instagram" onclick="msgSetFiltro('instagram',this)">Instagram</button>
+        </div>
+      </div>
+      <div class="msg-list" id="msgList"><div class="msg-empty">Cargando...</div></div>
+    </div>
+    <div class="msg-chat" id="msgChat">
+      <div class="msg-placeholder">Elegí una conversación de la izquierda.</div>
+    </div>
+  </div>
+</div>
+
 </main>
 </div>
 <div class="toast" id="toast"></div>
@@ -1357,6 +1453,7 @@ function showPanel(id,btn){
   if(id==='andreani')loadAndreaniEnvios();
   if(id==='mercaderia')loadMercaderiaBelgrano();
   if(id==='estadisticas')loadEstadisticas();
+  if(id==='mensajes')loadMensajes();
 }
 
 // ══════════════════════════════════════
@@ -3324,6 +3421,242 @@ function renderEstadisticas(ventas,merc){
   document.getElementById('est-sal-count').textContent=salidas.length.toLocaleString('es-AR');
   document.getElementById('est-sal-total').textContent=fmtMoney(salidasTotal);
 }
+
+// ══════════════════════════════════════
+// MENSAJES (Messenger + Instagram)
+// ══════════════════════════════════════
+// Los mensajes entran por la edge function meta-webhook a msg_conversaciones /
+// msg_mensajes; se responde por meta-mensajes. Mientras el panel está abierto
+// se refresca cada pocos segundos; el contador del menú, cada minuto.
+const MSG_POLL_MS=8000, MSG_BADGE_MS=60000, MSG_H24=24*3600e3, MSG_D7=7*24*3600e3;
+const msgState={convs:[],open:null,msgs:[],filtro:'todas',busqueda:'',timer:null,sending:false,sinAcceso:false};
+
+async function msgApi(path,opts={}){
+  const H=await getAuthHeaders();
+  const r=await fetch(`${SUPA_URL}/rest/v1/${path}`,{...opts,headers:{...H,...(opts.headers||{})}});
+  if(r.status===401||r.status===403){msgState.sinAcceso=true;throw new Error('Tu usuario no tiene acceso a Mensajes')}
+  if(!r.ok)throw new Error(await r.text());
+  const t=await r.text();return t?JSON.parse(t):null;
+}
+async function msgFn(body){
+  const H=await getAuthHeaders();
+  const r=await fetch(`${SUPA_URL}/functions/v1/meta-mensajes`,{method:'POST',headers:H,body:JSON.stringify(body)});
+  let data={};try{data=await r.json()}catch{}
+  if(!r.ok||!data.ok)throw new Error(data.error||`Error ${r.status}`);
+  return data;
+}
+
+function msgHora(iso){
+  const d=new Date(iso),hoy=new Date();
+  if(d.toDateString()===hoy.toDateString())return d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const ayer=new Date(hoy);ayer.setDate(hoy.getDate()-1);
+  if(d.toDateString()===ayer.toDateString())return 'Ayer';
+  if(hoy-d<6*864e5)return d.toLocaleDateString('es-AR',{weekday:'short'});
+  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+function msgDia(iso){
+  const d=new Date(iso),hoy=new Date();
+  if(d.toDateString()===hoy.toDateString())return 'Hoy';
+  const ayer=new Date(hoy);ayer.setDate(hoy.getDate()-1);
+  if(d.toDateString()===ayer.toDateString())return 'Ayer';
+  return d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+}
+function msgNombre(c){return c.contacto_nombre||(c.contacto_usuario?'@'+c.contacto_usuario:'Sin nombre')}
+function msgAvatar(c){
+  const ini=escHtml((msgNombre(c).replace(/^@/,'')[0]||'?').toUpperCase());
+  const img=c.contacto_foto?`<img src="${escHtml(c.contacto_foto)}" alt="" onerror="this.remove()">`:'';
+  const plat=c.plataforma==='instagram'?'IG':'f';
+  return `<div class="msg-avatar">${img||ini}<span class="msg-plat ${c.plataforma}">${plat}</span></div>`;
+}
+
+async function loadMensajes(){
+  try{
+    msgState.convs=await msgApi('msg_conversaciones?select=*&order=ultimo_at.desc.nullslast&limit=300');
+    renderMsgList();
+    if(msgState.open)await msgLoadThread(false);
+  }catch(e){
+    if(e.message!=='sesion_vencida')document.getElementById('msgList').innerHTML=`<div class="msg-empty">${escHtml(e.message)}</div>`;
+  }
+  msgUpdateBadge();
+  if(!msgState.timer)msgState.timer=setInterval(()=>{
+    if(!document.getElementById('panel-mensajes').classList.contains('active')||document.hidden)return;
+    loadMensajes();
+  },MSG_POLL_MS);
+}
+
+function msgSetFiltro(f,btn){
+  msgState.filtro=f;
+  document.querySelectorAll('.msg-filter').forEach(b=>b.classList.toggle('active',b===btn));
+  renderMsgList();
+}
+
+function renderMsgList(){
+  const q=msgState.busqueda.trim().toLowerCase();
+  const f=msgState.filtro;
+  const rows=msgState.convs.filter(c=>{
+    if(f==='no_leidas'&&!c.no_leidos)return false;
+    if((f==='messenger'||f==='instagram')&&c.plataforma!==f)return false;
+    if(q&&!`${msgNombre(c)} ${c.contacto_usuario||''} ${c.ultimo_texto||''}`.toLowerCase().includes(q))return false;
+    return true;
+  });
+  const el=document.getElementById('msgList');
+  if(!rows.length){el.innerHTML='<div class="msg-empty">No hay conversaciones.</div>';return}
+  el.innerHTML=rows.map(c=>`
+    <div class="msg-item${c.id===msgState.open?' active':''}${c.no_leidos?' unread':''}" onclick="msgOpen('${escHtml(c.id)}')">
+      ${msgAvatar(c)}
+      <div class="msg-item-body">
+        <div class="msg-item-top"><span class="msg-item-name">${escHtml(msgNombre(c))}</span><span class="msg-item-time">${c.ultimo_at?msgHora(c.ultimo_at):''}</span></div>
+        <div class="msg-item-bottom"><span class="msg-item-text">${escHtml(c.ultimo_texto||'')}</span>${c.no_leidos?`<span class="msg-unread">${c.no_leidos}</span>`:''}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function msgOpen(id){
+  msgState.open=id;msgState.msgs=[];
+  document.getElementById('msgWrap').classList.add('chat-open');
+  renderMsgList();
+  renderMsgChat();
+  await msgLoadThread(true);
+  const c=msgState.convs.find(x=>x.id===id);
+  if(c&&c.no_leidos){
+    c.no_leidos=0;renderMsgList();msgUpdateBadge();
+    msgApi(`msg_conversaciones?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body:JSON.stringify({no_leidos:0})}).catch(()=>{});
+  }
+}
+function msgClose(){
+  msgState.open=null;
+  document.getElementById('msgWrap').classList.remove('chat-open');
+  renderMsgList();renderMsgChat();
+}
+
+async function msgLoadThread(forzarScroll){
+  const id=msgState.open;if(!id)return;
+  const msgs=await msgApi(`msg_mensajes?conversacion_id=eq.${encodeURIComponent(id)}&select=*&order=created_at.asc&limit=500`);
+  if(msgState.open!==id)return;
+  const ultimo=a=>a.length?a[a.length-1].id+'|'+a[a.length-1].enviado_por:'';
+  const cambio=msgs.length!==msgState.msgs.length||ultimo(msgs)!==ultimo(msgState.msgs);
+  msgState.msgs=msgs;
+  if(cambio||forzarScroll)renderMsgThread(forzarScroll);
+  else renderMsgAviso();
+}
+
+function msgAdjuntos(adj){
+  if(!adj||!adj.length)return '';
+  return adj.map(a=>{
+    if(!a.url)return `<div>[${escHtml(a.tipo||'adjunto')}]</div>`;
+    if(a.tipo==='image'||a.tipo==='sticker'||a.tipo==='animated_image')return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener"><img src="${escHtml(a.url)}" alt="imagen" loading="lazy"></a>`;
+    return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener">📎 ${escHtml(a.tipo||'archivo')}</a>`;
+  }).join('');
+}
+
+// Arma la estructura del chat una sola vez por conversación; el refresco
+// periódico solo toca el hilo y el aviso, así no se pierde lo que se escribe.
+function renderMsgChat(){
+  const box=document.getElementById('msgChat');
+  const c=msgState.convs.find(x=>x.id===msgState.open);
+  if(!c){box.innerHTML='<div class="msg-placeholder">Elegí una conversación de la izquierda.</div>';return}
+  const sub=c.plataforma==='instagram'?(c.contacto_usuario?'Instagram · @'+escHtml(c.contacto_usuario):'Instagram'):'Messenger';
+  box.innerHTML=`
+    <div class="msg-chat-head">
+      <button class="msg-back" onclick="msgClose()" title="Volver">‹</button>
+      ${msgAvatar(c)}
+      <div><div class="msg-chat-name">${escHtml(msgNombre(c))}</div><div class="msg-chat-sub">${sub}</div></div>
+    </div>
+    <div class="msg-thread" id="msgThread"><div class="msg-empty">Cargando...</div></div>
+    <div id="msgAviso"></div>
+    <div class="msg-compose">
+      <textarea id="msgText" rows="1" onkeydown="msgKey(event)" oninput="msgAutoGrow(this)"></textarea>
+      <button class="msg-send" id="msgSendBtn" onclick="msgEnviar()">ENVIAR</button>
+    </div>`;
+  renderMsgAviso();
+  if(window.matchMedia('(min-width:769px)').matches)document.getElementById('msgText').focus();
+}
+
+function renderMsgThread(forzarScroll){
+  const th=document.getElementById('msgThread');if(!th)return;
+  const cercaDelFinal=th.scrollHeight-th.scrollTop-th.clientHeight<80;
+  let html='',dia='';
+  for(const m of msgState.msgs){
+    const d=msgDia(m.created_at);
+    if(d!==dia){html+=`<div class="msg-day">${escHtml(d)}</div>`;dia=d}
+    const hora=new Date(m.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const quien=m.direccion==='out'&&m.enviado_por&&m.enviado_por!=='sistema'?escHtml(m.enviado_por.split('@')[0])+' · ':'';
+    html+=`<div class="msg-bubble ${m.direccion}">${m.texto?escHtml(m.texto):''}${msgAdjuntos(m.adjuntos)}<div class="msg-meta">${quien}${hora}</div></div>`;
+  }
+  th.innerHTML=html||'<div class="msg-empty">Sin mensajes guardados.</div>';
+  if(forzarScroll||cercaDelFinal)th.scrollTop=th.scrollHeight;
+  renderMsgAviso();
+}
+
+// Ventana de Meta: 24 h libre, hasta 7 días como "atención humana", después nada.
+function renderMsgAviso(){
+  const el=document.getElementById('msgAviso');if(!el)return;
+  const c=msgState.convs.find(x=>x.id===msgState.open);if(!c)return;
+  const desde=c.ultimo_entrante_at?Date.now()-new Date(c.ultimo_entrante_at).getTime():Infinity;
+  const bloqueado=desde>MSG_D7;
+  el.innerHTML=bloqueado
+    ?'<div class="msg-window closed">Pasaron más de 7 días desde el último mensaje del cliente: Meta no deja responder hasta que vuelva a escribir.</div>'
+    :desde>MSG_H24?'<div class="msg-window">Pasaron más de 24 h desde el último mensaje del cliente: la respuesta sale como "atención humana" (Meta lo permite hasta 7 días).</div>':'';
+  const ta=document.getElementById('msgText'),btn=document.getElementById('msgSendBtn');
+  ta.disabled=bloqueado;
+  ta.placeholder=bloqueado?'No se puede responder esta conversación':'Escribí una respuesta... (Enter envía, Shift+Enter salto de línea)';
+  btn.disabled=bloqueado||msgState.sending;
+}
+
+function msgAutoGrow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,140)+'px'}
+function msgKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();msgEnviar()}}
+
+async function msgEnviar(){
+  const ta=document.getElementById('msgText');
+  const texto=(ta?.value||'').trim();
+  if(!texto||msgState.sending||!msgState.open)return;
+  msgState.sending=true;
+  const btn=document.getElementById('msgSendBtn');btn.disabled=true;btn.textContent='...';
+  try{
+    await msgFn({accion:'enviar',conversacion_id:msgState.open,texto});
+    ta.value='';
+    msgAutoGrow(ta);
+    await loadMensajes();
+    await msgLoadThread(true);
+  }catch(e){
+    toast(e.message,'error');
+  }finally{
+    msgState.sending=false;
+    const b=document.getElementById('msgSendBtn');if(b){b.disabled=false;b.textContent='ENVIAR'}
+    document.getElementById('msgText')?.focus();
+  }
+}
+
+async function msgSincronizar(){
+  const btn=document.getElementById('msgSyncBtn');
+  btn.disabled=true;btn.textContent='Trayendo...';
+  try{
+    let nuevos=0;
+    for(const plataforma of ['messenger','instagram']){
+      const r=await msgFn({accion:'sincronizar',plataforma,max:25});
+      nuevos+=r[`${plataforma}_mensajes_nuevos`]||0;
+    }
+    toast(nuevos?`${nuevos} mensajes nuevos`:'Ya estaba todo al día');
+    await loadMensajes();
+  }catch(e){
+    toast(e.message,'error');
+  }finally{
+    btn.disabled=false;btn.textContent='↻ Traer historial';
+  }
+}
+
+async function msgUpdateBadge(){
+  if(msgState.sinAcceso)return;
+  try{
+    const H=await getAccessToken();if(!H)return;
+    const rows=await msgApi('msg_conversaciones?select=no_leidos&no_leidos=gt.0');
+    const n=rows.reduce((s,r)=>s+r.no_leidos,0);
+    const b=document.getElementById('msgBadge');
+    b.textContent=n>99?'99+':n;b.classList.toggle('show',n>0);
+  }catch{}
+}
+setInterval(()=>{if(!document.hidden)msgUpdateBadge()},MSG_BADGE_MS);
+msgUpdateBadge();
 
 // ══════════════════════════════════════
 // INIT
