@@ -534,6 +534,11 @@ body.sidebar-collapsed .nav-link .nav-badge{position:absolute;top:3px;right:3px;
 .msg-plat{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;border:2px solid var(--s1);font-size:8px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center}
 .msg-plat.messenger{background:#0866ff}
 .msg-plat.instagram{background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)}
+.msg-plat.whatsapp{background:#25d366}
+.msg-wa-banner{padding:9px 14px;margin-bottom:10px;border-radius:10px;font-size:12px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--unk);flex-shrink:0}
+.msg-header-btns{display:flex;gap:8px;align-items:center}
+.msg-media-load{font-size:12px;opacity:.75}
+.msg-bubble audio,.msg-bubble video{display:block;max-width:260px;margin:2px 0}
 .msg-item-body{flex:1;min-width:0}
 .msg-item-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 .msg-item-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1153,9 +1158,13 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
 <!-- ═══ MENSAJES ═══ -->
 <div class="panel" id="panel-mensajes">
   <div class="page-header msg-header-row">
-    <div><h2>MENSAJES</h2><p>Messenger e Instagram de Entelequia en un solo lugar.</p></div>
-    <button class="btn btn-sm" id="msgSyncBtn" onclick="msgSincronizar()" title="Trae de Meta las conversaciones recientes, por si se perdió algún mensaje">↻ Traer historial</button>
+    <div><h2>MENSAJES</h2><p>Messenger, Instagram y WhatsApp de Entelequia en un solo lugar.</p></div>
+    <div class="msg-header-btns">
+      <button class="btn btn-sm" id="msgWaBtn" style="display:none" onclick="msgWaConectar()" title="Conecta el número de WhatsApp de Entelequia (sigue andando en el celular)">🟢 Conectar WhatsApp</button>
+      <button class="btn btn-sm" id="msgSyncBtn" onclick="msgSincronizar()" title="Trae de Meta las conversaciones recientes, por si se perdió algún mensaje">↻ Traer historial</button>
+    </div>
   </div>
+  <div class="msg-wa-banner" id="msgWaBanner" style="display:none"></div>
   <div class="msg-wrap" id="msgWrap">
     <div class="msg-side">
       <div class="msg-tools">
@@ -1165,6 +1174,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
           <button class="msg-filter" data-f="no_leidas" onclick="msgSetFiltro('no_leidas',this)">No leídas</button>
           <button class="msg-filter" data-f="messenger" onclick="msgSetFiltro('messenger',this)">Messenger</button>
           <button class="msg-filter" data-f="instagram" onclick="msgSetFiltro('instagram',this)">Instagram</button>
+          <button class="msg-filter" data-f="whatsapp" onclick="msgSetFiltro('whatsapp',this)">WhatsApp</button>
         </div>
       </div>
       <div class="msg-list" id="msgList"><div class="msg-empty">Cargando...</div></div>
@@ -3466,7 +3476,7 @@ function msgNombre(c){return c.contacto_nombre||(c.contacto_usuario?'@'+c.contac
 function msgAvatar(c){
   const ini=escHtml((msgNombre(c).replace(/^@/,'')[0]||'?').toUpperCase());
   const img=c.contacto_foto?`<img src="${escHtml(c.contacto_foto)}" alt="" onerror="this.remove()">`:'';
-  const plat=c.plataforma==='instagram'?'IG':'f';
+  const plat=c.plataforma==='instagram'?'IG':c.plataforma==='whatsapp'?'W':'f';
   return `<div class="msg-avatar">${img||ini}<span class="msg-plat ${c.plataforma}">${plat}</span></div>`;
 }
 
@@ -3479,6 +3489,7 @@ async function loadMensajes(){
     if(e.message!=='sesion_vencida')document.getElementById('msgList').innerHTML=`<div class="msg-empty">${escHtml(e.message)}</div>`;
   }
   msgUpdateBadge();
+  if(!msgState.wa)msgWaEstado();
   if(!msgState.timer)msgState.timer=setInterval(()=>{
     if(!document.getElementById('panel-mensajes').classList.contains('active')||document.hidden)return;
     loadMensajes();
@@ -3496,7 +3507,7 @@ function renderMsgList(){
   const f=msgState.filtro;
   const rows=msgState.convs.filter(c=>{
     if(f==='no_leidas'&&!c.no_leidos)return false;
-    if((f==='messenger'||f==='instagram')&&c.plataforma!==f)return false;
+    if((f==='messenger'||f==='instagram'||f==='whatsapp')&&c.plataforma!==f)return false;
     if(q&&!`${msgNombre(c)} ${c.contacto_usuario||''} ${c.ultimo_texto||''}`.toLowerCase().includes(q))return false;
     return true;
   });
@@ -3544,10 +3555,39 @@ async function msgLoadThread(forzarScroll){
 function msgAdjuntos(adj){
   if(!adj||!adj.length)return '';
   return adj.map(a=>{
+    if(!a.url&&a.media_id)return msgMediaHtml(a);
     if(!a.url)return `<div>[${escHtml(a.tipo||'adjunto')}]</div>`;
     if(a.tipo==='image'||a.tipo==='sticker'||a.tipo==='animated_image')return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener"><img src="${escHtml(a.url)}" alt="imagen" loading="lazy"></a>`;
     return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener">📎 ${escHtml(a.tipo||'archivo')}</a>`;
   }).join('');
+}
+
+// Los archivos de WhatsApp necesitan el token del negocio: se piden a la
+// edge function una sola vez y se guardan en memoria mientras dura la sesión.
+const msgMediaCache={};
+function msgMediaHtml(a){
+  const c=msgMediaCache[a.media_id];
+  if(!c)return `<div class="msg-media-load" data-media="${escHtml(a.media_id)}" data-tipo="${escHtml(a.tipo||'')}">${a.tipo==='image'||a.tipo==='sticker'?'🖼️ cargando imagen…':'📎 cargando '+escHtml(a.tipo||'archivo')+'…'}</div>`;
+  if(c.error)return `<div class="msg-media-load">[${escHtml(a.tipo||'archivo')} no disponible]</div>`;
+  if(a.tipo==='image'||a.tipo==='sticker')return `<a href="${c.url}" target="_blank" rel="noopener"><img src="${c.url}" alt="imagen"></a>`;
+  if(a.tipo==='audio')return `<audio controls src="${c.url}"></audio>`;
+  if(a.tipo==='video')return `<video controls src="${c.url}"></video>`;
+  return `<a href="${c.url}" download="${escHtml(a.nombre||'archivo')}">📎 ${escHtml(a.nombre||a.tipo||'archivo')}</a>`;
+}
+async function msgCargarMedia(){
+  const pend=[...document.querySelectorAll('#msgThread [data-media]')].filter(el=>!msgMediaCache[el.dataset.media]);
+  for(const el of pend){
+    const id=el.dataset.media;
+    if(msgMediaCache[id])continue;
+    msgMediaCache[id]={cargando:true};
+    try{
+      const r=await msgFn({accion:'media',media_id:id});
+      const bin=atob(r.base64),buf=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+      msgMediaCache[id]={url:URL.createObjectURL(new Blob([buf],{type:r.mime||'application/octet-stream'}))};
+    }catch{msgMediaCache[id]={error:true}}
+  }
+  if(pend.length)renderMsgThread(false);
 }
 
 // Arma la estructura del chat una sola vez por conversación; el refresco
@@ -3556,7 +3596,8 @@ function renderMsgChat(){
   const box=document.getElementById('msgChat');
   const c=msgState.convs.find(x=>x.id===msgState.open);
   if(!c){box.innerHTML='<div class="msg-placeholder">Elegí una conversación de la izquierda.</div>';return}
-  const sub=c.plataforma==='instagram'?(c.contacto_usuario?'Instagram · @'+escHtml(c.contacto_usuario):'Instagram'):'Messenger';
+  const sub=c.plataforma==='instagram'?(c.contacto_usuario?'Instagram · @'+escHtml(c.contacto_usuario):'Instagram')
+    :c.plataforma==='whatsapp'?'WhatsApp'+(c.contacto_usuario?' · '+escHtml(c.contacto_usuario):''):'Messenger';
   box.innerHTML=`
     <div class="msg-chat-head">
       <button class="msg-back" onclick="msgClose()" title="Volver">‹</button>
@@ -3593,6 +3634,7 @@ function renderMsgThread(forzarScroll){
     html+=`<div class="msg-bubble out" style="opacity:.6">${escHtml(p.texto)}<div class="msg-meta">enviando… · ${hora}</div></div>`;
   }
   th.innerHTML=html||'<div class="msg-empty">Sin mensajes guardados.</div>';
+  if(th.querySelector('[data-media]'))msgCargarMedia();
   if(forzarScroll||cercaDelFinal)th.scrollTop=th.scrollHeight;
   renderMsgAviso();
 }
@@ -3602,9 +3644,12 @@ function renderMsgAviso(){
   const el=document.getElementById('msgAviso');if(!el)return;
   const c=msgState.convs.find(x=>x.id===msgState.open);if(!c)return;
   const desde=c.ultimo_entrante_at?Date.now()-new Date(c.ultimo_entrante_at).getTime():Infinity;
-  const bloqueado=desde>MSG_D7;
+  // WhatsApp no tiene la extensión de 7 días: pasadas 24 h solo con plantilla.
+  const wa=c.plataforma==='whatsapp';
+  const bloqueado=wa?desde>MSG_H24:desde>MSG_D7;
   el.innerHTML=bloqueado
-    ?'<div class="msg-window closed">Pasaron más de 7 días desde el último mensaje del cliente: Meta no deja responder hasta que vuelva a escribir.</div>'
+    ?(wa?'<div class="msg-window closed">Pasaron más de 24 h desde el último mensaje del cliente: WhatsApp no deja responder desde acá hasta que vuelva a escribir (respondé desde el celular).</div>'
+       :'<div class="msg-window closed">Pasaron más de 7 días desde el último mensaje del cliente: Meta no deja responder hasta que vuelva a escribir.</div>')
     :desde>MSG_H24?'<div class="msg-window">Pasaron más de 24 h desde el último mensaje del cliente: la respuesta sale como "atención humana" (Meta lo permite hasta 7 días).</div>':'';
   const ta=document.getElementById('msgText'),btn=document.getElementById('msgSendBtn');
   ta.disabled=bloqueado;
@@ -3654,6 +3699,73 @@ async function msgSincronizar(){
   }finally{
     btn.disabled=false;btn.textContent='↻ Traer historial';
   }
+}
+
+// Estado de la conexión de WhatsApp: el botón para conectar solo lo ve un
+// administrador; si Meta corta la coexistencia (p. ej. el celular estuvo
+// ~14 días inactivo) se avisa a todos.
+async function msgWaEstado(){
+  try{
+    const r=await msgFn({accion:'wa_estado'});
+    msgState.wa=r;
+    const btn=document.getElementById('msgWaBtn'),ban=document.getElementById('msgWaBanner');
+    btn.style.display=r.admin&&!r.conectado?'':'none';
+    if(r.estado==='desconectado'){
+      ban.style.display='';
+      ban.textContent='WhatsApp se desconectó de la bandeja (Meta corta la conexión si el celular pasa unos 14 días sin actividad). Los mensajes siguen llegando al celular; hay que volver a conectarlo.';
+    }else ban.style.display='none';
+  }catch{msgState.wa=msgState.wa||{}}
+}
+
+// Registro insertado de Meta (v4): abre el flujo donde se elige el número y
+// se escanea el QR desde la app WhatsApp Business. El code que devuelve vence
+// a los 30 s, así que se manda enseguida a meta-mensajes junto con los IDs que
+// llegan por postMessage.
+function msgFbSdk(appId){
+  if(window.FB)return Promise.resolve();
+  return new Promise((ok,err)=>{
+    window.fbAsyncInit=()=>{FB.init({appId,autoLogAppEvents:true,xfbml:false,version:'v21.0'});ok()};
+    const s=document.createElement('script');
+    s.src='https://connect.facebook.net/es_LA/sdk.js';s.async=true;s.defer=true;s.crossOrigin='anonymous';
+    s.onerror=()=>err(new Error('No se pudo cargar el SDK de Facebook'));
+    document.head.appendChild(s);
+  });
+}
+async function msgWaConectar(){
+  const r=msgState.wa;
+  if(!r?.config_id){toast('Falta la configuración del Registro insertado en Meta (config_id)','error');return}
+  const btn=document.getElementById('msgWaBtn');
+  btn.disabled=true;btn.textContent='Conectando...';
+  let sesion=null;
+  const onMsg=ev=>{
+    if(!ev.origin.endsWith('facebook.com'))return;
+    try{
+      const d=JSON.parse(ev.data);
+      if(d.type==='WA_EMBEDDED_SIGNUP'){sesion=d;console.log('[WA] sesión',d.event,d.data)}
+    }catch{}
+  };
+  window.addEventListener('message',onMsg);
+  const fin=()=>{window.removeEventListener('message',onMsg);btn.disabled=false;btn.textContent='🟢 Conectar WhatsApp'};
+  try{
+    await msgFbSdk(r.app_id);
+    FB.login(resp=>{
+      (async()=>{
+        try{
+          const code=resp?.authResponse?.code;
+          if(!code){toast('Se canceló la conexión de WhatsApp','error');return}
+          // El evento con los IDs puede llegar apenas después del code.
+          for(let i=0;i<20&&!sesion?.data?.waba_id;i++)await new Promise(x=>setTimeout(x,250));
+          if(sesion?.event==='CANCEL'||sesion?.event==='ERROR'){toast('Meta: '+(sesion.data?.error_message||sesion.data?.current_step||sesion.event),'error');return}
+          const d=sesion?.data||{};
+          const res=await msgFn({accion:'wa_conectar',code,waba_id:d.waba_id,phone_number_id:d.phone_number_id,business_id:d.business_id});
+          console.log('[WA] conectado',res);
+          toast('WhatsApp conectado. El historial del celular va a ir apareciendo en unos minutos.');
+          await msgWaEstado();loadMensajes();
+        }catch(e){toast(e.message,'error')}
+        finally{fin()}
+      })();
+    },{config_id:r.config_id,response_type:'code',override_default_response_type:true,extras:r.extras||{}});
+  }catch(e){toast(e.message,'error');fin()}
 }
 
 async function msgUpdateBadge(){
