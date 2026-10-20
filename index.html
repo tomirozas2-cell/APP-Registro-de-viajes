@@ -549,6 +549,9 @@ body.sidebar-collapsed .nav-link .nav-badge{position:absolute;top:3px;right:3px;
 .msg-bot-nota{font-size:11px;color:var(--muted2)}
 .msg-tag{font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:rgba(251,191,36,.15);color:var(--c3);flex-shrink:0}
 .msg-chat-bot{margin-left:auto;font-size:11px;padding:5px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--muted2);cursor:pointer;white-space:nowrap}
+.msg-bot-test{border:1px solid var(--border);border-radius:10px;background:var(--bg);display:flex;flex-direction:column;max-height:340px}
+.msg-bot-test .msg-thread{min-height:120px;padding:10px}
+.msg-bot-test .msg-compose{padding:8px}
 .msg-chat-bot.pausado{color:var(--c3);border-color:rgba(251,191,36,.4)}
 .msg-bubble audio,.msg-bubble video{display:block;max-width:260px;margin:2px 0}
 .msg-item-body{flex:1;min-width:0}
@@ -3819,8 +3822,41 @@ function msgBotPanel(forzar){
       <span>de <input type="time" id="msgBotDesde" value="${c.desde}"> a <input type="time" id="msgBotHasta" value="${c.hasta}"></span>
     </div>
     <div class="msg-bot-nota">Si el horario cruza la medianoche (ej. 20:00 a 10:00) cuenta para el día en que empieza. Cuando alguien del equipo responde un chat, el bot no se mete en ese chat por ${c.pausa_horas} h. Si el cliente pide hablar con una persona, el bot se corre y el chat queda marcado 🙋 Atender.</div>
-    <div class="msg-bot-row"><button class="btn btn-sm" id="msgBotGuardar" onclick="msgBotGuardar()">Guardar</button><button class="btn btn-sm" onclick="msgBotPanel()">Cerrar</button></div>`;
+    <div class="msg-bot-row"><button class="btn btn-sm" id="msgBotGuardar" onclick="msgBotGuardar()">Guardar</button><button class="btn btn-sm" onclick="msgBotPanel()">Cerrar</button></div>
+    <div><b>Probar el bot</b> <span class="msg-bot-nota">— escribile como si fueras un cliente de Instagram. No se le manda nada a nadie. <a href="#" onclick="msgBotTestReset();return false">Empezar de nuevo</a></span></div>
+    <div class="msg-bot-test">
+      <div class="msg-thread" id="msgBotTestThread"></div>
+      <div class="msg-compose">
+        <textarea id="msgBotTestText" rows="1" placeholder="Ej: ¿tienen el tomo 3 de One Piece?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();msgBotTestEnviar()}" oninput="msgAutoGrow(this)"></textarea>
+        <button class="msg-send" id="msgBotTestBtn" onclick="msgBotTestEnviar()">PROBAR</button>
+      </div>
+    </div>`;
+  renderMsgBotTest();
   el.style.display='';
+}
+// Chat de prueba: la charla vive en memoria; "Empezar de nuevo" abre otra
+// conversación para el bot (olvida el contexto anterior).
+const msgBotTest={conv:Date.now().toString(36),msgs:[],enviando:false};
+function msgBotTestReset(){msgBotTest.conv=Date.now().toString(36);msgBotTest.msgs=[];renderMsgBotTest()}
+function renderMsgBotTest(){
+  const th=document.getElementById('msgBotTestThread');if(!th)return;
+  th.innerHTML=msgBotTest.msgs.map(m=>`<div class="msg-bubble ${m.de==='yo'?'in':'out'}">${escHtml(m.texto)}${m.nota?`<div class="msg-meta">${escHtml(m.nota)}</div>`:''}</div>`).join('')
+    +(msgBotTest.enviando?'<div class="msg-bubble out" style="opacity:.6">pensando…</div>':'')
+    ||'<div class="msg-empty">Todavía no le escribiste.</div>';
+  th.scrollTop=th.scrollHeight;
+}
+async function msgBotTestEnviar(){
+  const ta=document.getElementById('msgBotTestText');
+  const texto=(ta?.value||'').trim();if(!texto||msgBotTest.enviando)return;
+  msgBotTest.msgs.push({de:'yo',texto});ta.value='';msgAutoGrow(ta);
+  msgBotTest.enviando=true;renderMsgBotTest();
+  const t0=Date.now();
+  try{
+    const r=await msgFn({accion:'bot_probar',texto,conversacion:msgBotTest.conv});
+    const seg=((Date.now()-t0)/1000).toFixed(1)+' s';
+    msgBotTest.msgs.push({de:'bot',texto:r.respuesta,nota:'🤖 '+seg+(r.derivaria?' · acá pausaría el bot y marcaría 🙋 Atender':'')});
+  }catch(e){msgBotTest.msgs.push({de:'bot',texto:'⚠️ '+e.message})}
+  msgBotTest.enviando=false;renderMsgBotTest();ta.focus();
 }
 function msgBotModo(){
   const m=document.querySelector('input[name=msgBotModo]:checked')?.value;
