@@ -538,6 +538,7 @@ body.sidebar-collapsed .nav-link .nav-badge{position:absolute;top:3px;right:3px;
 .msg-wa-banner{padding:9px 14px;margin-bottom:10px;border-radius:10px;font-size:12px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--unk);flex-shrink:0}
 .msg-header-btns{display:flex;gap:8px;align-items:center}
 .msg-media-load{font-size:12px;opacity:.75}
+.msg-adj-rotulo{font-size:11px;opacity:.8;margin-bottom:3px}
 .msg-bot-btn.on{border-color:#25d366;color:#25d366}
 .msg-bot-btn.sched{border-color:var(--c3);color:var(--c3)}
 .msg-bot-panel{margin-bottom:10px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--s1);font-size:13px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
@@ -3571,13 +3572,20 @@ async function msgLoadThread(forzarScroll){
   else renderMsgAviso();
 }
 
+const MSG_ADJ_ROTULO={story_reply:'↩️ Respondió a tu historia',story_mention:'📣 Te mencionó en su historia',reel:'🎬 Reel'};
 function msgAdjuntos(adj){
   if(!adj||!adj.length)return '';
   return adj.map(a=>{
     if(!a.url&&a.media_id)return msgMediaHtml(a);
-    if(!a.url)return `<div>[${escHtml(a.tipo||'adjunto')}]</div>`;
-    if(a.tipo==='image'||a.tipo==='sticker'||a.tipo==='animated_image')return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener"><img src="${escHtml(a.url)}" alt="imagen" loading="lazy"></a>`;
-    return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener">📎 ${escHtml(a.tipo||'archivo')}</a>`;
+    const rotulo=MSG_ADJ_ROTULO[a.tipo];
+    if(!a.url)return `<div class="msg-adj-rotulo">${rotulo||'['+escHtml(a.tipo||'adjunto')+']'}${rotulo&&a.tipo.startsWith('story')?' (ya no disponible)':''}</div>`;
+    const u=escHtml(a.url);
+    if(a.tipo==='video'||a.tipo==='reel')return `${rotulo?`<div class="msg-adj-rotulo">${rotulo}</div>`:''}<video controls preload="metadata" src="${u}"></video>`;
+    if(a.tipo==='audio')return `<audio controls preload="metadata" src="${u}"></audio>`;
+    if(a.tipo==='share')return `<a href="${u}" target="_blank" rel="noopener">🔗 Publicación compartida</a>`;
+    // Imágenes, historias (foto o video) y adjuntos viejos guardados como "file":
+    // se intenta como imagen y, si no carga, queda el link.
+    return `${rotulo?`<div class="msg-adj-rotulo">${rotulo}</div>`:''}<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="imagen" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${a.tipo&&a.tipo.startsWith('story')?'📷 Ver historia (puede haber vencido)':'📎 Ver archivo'}'}))"></a>`;
   }).join('');
 }
 
