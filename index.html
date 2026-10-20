@@ -538,6 +538,18 @@ body.sidebar-collapsed .nav-link .nav-badge{position:absolute;top:3px;right:3px;
 .msg-wa-banner{padding:9px 14px;margin-bottom:10px;border-radius:10px;font-size:12px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--unk);flex-shrink:0}
 .msg-header-btns{display:flex;gap:8px;align-items:center}
 .msg-media-load{font-size:12px;opacity:.75}
+.msg-bot-btn.on{border-color:#25d366;color:#25d366}
+.msg-bot-btn.sched{border-color:var(--c3);color:var(--c3)}
+.msg-bot-panel{margin-bottom:10px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--s1);font-size:13px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+.msg-bot-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.msg-bot-row label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+.msg-bot-row input[type=time]{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px;font-family:'DM Sans',sans-serif}
+.msg-bot-dia{padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--muted2);font-size:12px;font-weight:600;cursor:pointer}
+.msg-bot-dia.on{background:var(--s3);color:var(--text);border-color:var(--border2)}
+.msg-bot-nota{font-size:11px;color:var(--muted2)}
+.msg-tag{font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:rgba(251,191,36,.15);color:var(--c3);flex-shrink:0}
+.msg-chat-bot{margin-left:auto;font-size:11px;padding:5px 9px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--muted2);cursor:pointer;white-space:nowrap}
+.msg-chat-bot.pausado{color:var(--c3);border-color:rgba(251,191,36,.4)}
 .msg-bubble audio,.msg-bubble video{display:block;max-width:260px;margin:2px 0}
 .msg-item-body{flex:1;min-width:0}
 .msg-item-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -1161,10 +1173,12 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
     <div><h2>MENSAJES</h2><p>Messenger, Instagram y WhatsApp de Entelequia en un solo lugar.</p></div>
     <div class="msg-header-btns">
       <button class="btn btn-sm" id="msgWaBtn" style="display:none" onclick="msgWaConectar()" title="Conecta el número de WhatsApp de Entelequia (sigue andando en el celular)">🟢 Conectar WhatsApp</button>
+      <button class="btn btn-sm msg-bot-btn" id="msgBotBtn" style="display:none" onclick="msgBotPanel()" title="El bot de Entelequia contesta Instagram solo">🤖 Bot</button>
       <button class="btn btn-sm" id="msgSyncBtn" onclick="msgSincronizar()" title="Trae de Meta las conversaciones recientes, por si se perdió algún mensaje">↻ Traer historial</button>
     </div>
   </div>
   <div class="msg-wa-banner" id="msgWaBanner" style="display:none"></div>
+  <div class="msg-bot-panel" id="msgBotPanel" style="display:none"></div>
   <div class="msg-wrap" id="msgWrap">
     <div class="msg-side">
       <div class="msg-tools">
@@ -3484,12 +3498,14 @@ async function loadMensajes(){
   try{
     msgState.convs=await msgApi('msg_conversaciones?select=*&order=ultimo_at.desc.nullslast&limit=300');
     renderMsgList();
+    renderMsgChatBot();
     if(msgState.open)await msgLoadThread(false);
   }catch(e){
     if(e.message!=='sesion_vencida')document.getElementById('msgList').innerHTML=`<div class="msg-empty">${escHtml(e.message)}</div>`;
   }
   msgUpdateBadge();
   if(!msgState.wa)msgWaEstado();
+  if(!msgState.bot)msgBotEstado();
   if(!msgState.timer)msgState.timer=setInterval(()=>{
     if(!document.getElementById('panel-mensajes').classList.contains('active')||document.hidden)return;
     loadMensajes();
@@ -3518,7 +3534,7 @@ function renderMsgList(){
       ${msgAvatar(c)}
       <div class="msg-item-body">
         <div class="msg-item-top"><span class="msg-item-name">${escHtml(msgNombre(c))}</span><span class="msg-item-time">${c.ultimo_at?msgHora(c.ultimo_at):''}</span></div>
-        <div class="msg-item-bottom"><span class="msg-item-text">${escHtml(c.ultimo_texto||'')}</span>${c.no_leidos?`<span class="msg-unread">${c.no_leidos}</span>`:''}</div>
+        <div class="msg-item-bottom"><span class="msg-item-text">${escHtml(c.ultimo_texto||'')}</span>${msgBotDerivada(c)?'<span class="msg-tag" title="El bot le pasó esta conversación al equipo">🙋 Atender</span>':''}${c.no_leidos?`<span class="msg-unread">${c.no_leidos}</span>`:''}</div>
       </div>
     </div>`).join('');
 }
@@ -3603,6 +3619,7 @@ function renderMsgChat(){
       <button class="msg-back" onclick="msgClose()" title="Volver">‹</button>
       ${msgAvatar(c)}
       <div><div class="msg-chat-name">${escHtml(msgNombre(c))}</div><div class="msg-chat-sub">${sub}</div></div>
+      <span id="msgChatBot" style="margin-left:auto"></span>
     </div>
     <div class="msg-thread" id="msgThread"><div class="msg-empty">Cargando...</div></div>
     <div id="msgAviso"></div>
@@ -3611,6 +3628,7 @@ function renderMsgChat(){
       <button class="msg-send" id="msgSendBtn" onclick="msgEnviar()">ENVIAR</button>
     </div>`;
   renderMsgAviso();
+  renderMsgChatBot();
   if(window.matchMedia('(min-width:769px)').matches)document.getElementById('msgText').focus();
 }
 
@@ -3622,7 +3640,7 @@ function renderMsgThread(forzarScroll){
     const d=msgDia(m.created_at);
     if(d!==dia){html+=`<div class="msg-day">${escHtml(d)}</div>`;dia=d}
     const hora=new Date(m.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    const quien=m.direccion==='out'&&m.enviado_por&&m.enviado_por!=='sistema'?escHtml(m.enviado_por.split('@')[0])+' · ':'';
+    const quien=m.enviado_por==='bot'?'🤖 Bot · ':m.direccion==='out'&&m.enviado_por&&m.enviado_por!=='sistema'?escHtml(m.enviado_por.split('@')[0])+' · ':'';
     html+=`<div class="msg-bubble ${m.direccion}">${m.texto?escHtml(m.texto):''}${msgAdjuntos(m.adjuntos)}<div class="msg-meta">${quien}${hora}</div></div>`;
   }
   // Mensajes recién escritos que Meta todavía no confirmó: se muestran al
@@ -3766,6 +3784,80 @@ async function msgWaConectar(){
       })();
     },{config_id:r.config_id,response_type:'code',override_default_response_type:true,extras:r.extras||{}});
   }catch(e){toast(e.message,'error');fin()}
+}
+
+// ── Bot de Entelequia: contesta Instagram solo (apagado, siempre o por
+// horario). Si responde una persona o el cliente pide hablar con alguien, el
+// bot se corre de esa conversación unas horas; también se puede pausar a mano.
+const MSG_DIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function msgBotPausada(c){return !!c.bot_pausado_hasta&&new Date(c.bot_pausado_hasta).getTime()>Date.now()}
+function msgBotDerivada(c){return !!c.bot_derivado_at&&msgBotPausada(c)}
+async function msgBotEstado(){
+  try{msgState.bot=await msgFn({accion:'bot_estado'})}catch{return}
+  renderMsgBotBtn();renderMsgChatBot();
+}
+function renderMsgBotBtn(){
+  const b=msgState.bot,btn=document.getElementById('msgBotBtn');if(!b||!btn)return;
+  btn.style.display='';
+  const m=b.config.modo;
+  btn.classList.toggle('on',m==='siempre');
+  btn.classList.toggle('sched',m==='horario');
+  btn.textContent=m==='apagado'?'🤖 Bot: apagado':m==='siempre'?'🤖 Bot: prendido'
+    :`🤖 Bot: ${b.config.desde}–${b.config.hasta}${b.activo_ahora?' (contestando)':''}`;
+}
+function msgBotPanel(forzar){
+  const el=document.getElementById('msgBotPanel'),b=msgState.bot;if(!b)return;
+  if(!forzar&&el.style.display!=='none'){el.style.display='none';return}
+  const c=b.config;
+  el.innerHTML=`
+    ${b.configurado?'':'<div class="msg-bot-nota" style="color:var(--unk)">Falta conectar el bot con su servidor: se puede dejar configurado pero todavía no contesta.</div>'}
+    <div class="msg-bot-row"><b>Contesta Instagram:</b>
+      ${[['apagado','Apagado'],['siempre','Siempre'],['horario','Por horario']].map(([v,t])=>`<label><input type="radio" name="msgBotModo" value="${v}"${c.modo===v?' checked':''} onchange="msgBotModo()"> ${t}</label>`).join('')}
+    </div>
+    <div class="msg-bot-row" id="msgBotHorario"${c.modo==='horario'?'':' style="display:none"'}>
+      ${MSG_DIAS.map((d,i)=>`<button type="button" class="msg-bot-dia${c.dias.includes(i)?' on':''}" data-dia="${i}" onclick="this.classList.toggle('on')">${d}</button>`).join('')}
+      <span>de <input type="time" id="msgBotDesde" value="${c.desde}"> a <input type="time" id="msgBotHasta" value="${c.hasta}"></span>
+    </div>
+    <div class="msg-bot-nota">Si el horario cruza la medianoche (ej. 20:00 a 10:00) cuenta para el día en que empieza. Cuando alguien del equipo responde un chat, el bot no se mete en ese chat por ${c.pausa_horas} h. Si el cliente pide hablar con una persona, el bot se corre y el chat queda marcado 🙋 Atender.</div>
+    <div class="msg-bot-row"><button class="btn btn-sm" id="msgBotGuardar" onclick="msgBotGuardar()">Guardar</button><button class="btn btn-sm" onclick="msgBotPanel()">Cerrar</button></div>`;
+  el.style.display='';
+}
+function msgBotModo(){
+  const m=document.querySelector('input[name=msgBotModo]:checked')?.value;
+  document.getElementById('msgBotHorario').style.display=m==='horario'?'':'none';
+}
+async function msgBotGuardar(){
+  const b=msgState.bot,btn=document.getElementById('msgBotGuardar');
+  const config={...b.config,
+    modo:document.querySelector('input[name=msgBotModo]:checked')?.value||'apagado',
+    dias:[...document.querySelectorAll('#msgBotHorario .msg-bot-dia.on')].map(x=>Number(x.dataset.dia)),
+    desde:document.getElementById('msgBotDesde').value,hasta:document.getElementById('msgBotHasta').value};
+  btn.disabled=true;
+  try{
+    msgState.bot=await msgFn({accion:'bot_config',config});
+    renderMsgBotBtn();renderMsgChatBot();
+    document.getElementById('msgBotPanel').style.display='none';
+    toast(config.modo==='apagado'?'Bot apagado':'Bot guardado');
+  }catch(e){toast(e.message,'error');btn.disabled=false}
+}
+function renderMsgChatBot(){
+  const el=document.getElementById('msgChatBot');if(!el)return;
+  const c=msgState.convs.find(x=>x.id===msgState.open),b=msgState.bot;
+  if(!c||!b||b.config.modo==='apagado'||!b.config.canales.includes(c.plataforma)){el.innerHTML='';return}
+  const p=msgBotPausada(c);
+  const hasta=p?new Date(c.bot_pausado_hasta):null;
+  const largo=p&&hasta-Date.now()>3*864e5;
+  const txt=p?(msgBotDerivada(c)?'🙋 Pidió una persona · ▶ Reactivar bot':`⏸ Bot en pausa${largo?'':' hasta '+hasta.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} · ▶ Reactivar`):'🤖 Bot activo · ⏸ Pausar';
+  el.innerHTML=`<button class="msg-chat-bot${p?' pausado':''}" onclick="msgBotPausar(${p?'false':'true'})" title="${p?'Vuelve a dejar que el bot conteste este chat':'El bot deja de contestar este chat hasta que lo reactives'}">${txt}</button>`;
+}
+async function msgBotPausar(pausar){
+  const id=msgState.open;if(!id)return;
+  try{
+    const r=await msgFn({accion:'bot_pausar',conversacion_id:id,pausar});
+    const c=msgState.convs.find(x=>x.id===id);
+    if(c){c.bot_pausado_hasta=r.bot_pausado_hasta;c.bot_derivado_at=null}
+    renderMsgChatBot();renderMsgList();
+  }catch(e){toast(e.message,'error')}
 }
 
 async function msgUpdateBadge(){
