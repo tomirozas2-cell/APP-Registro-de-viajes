@@ -1177,6 +1177,7 @@ getAccessToken().then(token=>{if(!token)showAuthGate()});
     <div><h2>MENSAJES</h2><p>Messenger, Instagram y WhatsApp de Entelequia en un solo lugar.</p></div>
     <div class="msg-header-btns">
       <button class="btn btn-sm" id="msgWaBtn" style="display:none" onclick="msgWaConectar()" title="Conecta el número de WhatsApp de Entelequia (sigue andando en el celular)">🟢 Conectar WhatsApp</button>
+      <button class="btn btn-sm" id="msgWaPlantillaBtn" style="display:none" onclick="msgWaPlantilla()" title="Crea en Meta la plantilla de aviso de pedido listo">📝 Crear plantilla</button>
       <button class="btn btn-sm msg-bot-btn" id="msgBotBtn" style="display:none" onclick="msgBotPanel()" title="El bot de Entelequia contesta Instagram solo">🤖 Bot</button>
       <button class="btn btn-sm" id="msgSyncBtn" onclick="msgSincronizar()" title="Trae de Meta las conversaciones recientes, por si se perdió algún mensaje">↻ Traer historial</button>
     </div>
@@ -3740,6 +3741,7 @@ async function msgWaEstado(){
     const btn=document.getElementById('msgWaBtn'),ban=document.getElementById('msgWaBanner');
     // Con el número de prueba de Meta conectado sigue visible para el número real.
     btn.style.display=r.admin&&(!r.conectado||r.estado==='prueba')?'':'none';
+    document.getElementById('msgWaPlantillaBtn').style.display=r.admin&&r.conectado?'':'none';
     if(r.estado==='desconectado'){
       ban.style.display='';
       ban.textContent='WhatsApp se desconectó de la bandeja (Meta corta la conexión si el celular pasa unos 14 días sin actividad). Los mensajes siguen llegando al celular; hay que volver a conectarlo.';
@@ -3812,6 +3814,16 @@ async function msgWaConectarPrueba(){
     toast('Número de prueba conectado: '+(res.numero||'')+(res.webhook==='ok'?'':' (webhook: '+res.webhook+')'));
     await msgWaEstado();loadMensajes();
   }catch(e){toast(e.message,'error')}
+}
+
+async function msgWaPlantilla(){
+  const btn=document.getElementById('msgWaPlantillaBtn');
+  btn.disabled=true;
+  try{
+    const r=await msgFn({accion:'wa_plantilla'});
+    toast('Plantilla "pedido_listo_retiro" creada en Meta (estado: '+(r.estado||'enviada')+')');
+  }catch(e){toast(e.message,'error')}
+  finally{btn.disabled=false}
 }
 
 // ── Bot de Entelequia: contesta Instagram solo (apagado, siempre o por
