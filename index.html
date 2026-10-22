@@ -3831,6 +3831,9 @@ function msgBotPanel(forzar){
     </div>
     <div class="msg-bot-nota">Si el horario cruza la medianoche (ej. 20:00 a 10:00) cuenta para el día en que empieza. Cuando alguien del equipo responde un chat, el bot no se mete en ese chat por ${c.pausa_horas} h. Si el cliente pide hablar con una persona, el bot se corre y el chat queda marcado 🙋 Atender.</div>
     <div class="msg-bot-row"><button class="btn btn-sm" id="msgBotGuardar" onclick="msgBotGuardar()">Guardar</button><button class="btn btn-sm" onclick="msgBotPanel()">Cerrar</button></div>
+    <div><b>Promos vigentes</b> <span class="msg-bot-nota">— lo que escribas acá es lo que el bot sabe de promos. Una por línea, con la fecha de fin: el bot deja de ofrecerla cuando pasa. Si una promo no está acá, el bot dice que lo consulta con el equipo.</span></div>
+    <textarea id="msgBotPromos" rows="5" maxlength="3000" style="width:100%;box-sizing:border-box" placeholder="Ej: Promo Stephen King hasta el 30/10: comprando online cualquier título de Stephen King, te llega de regalo La mitad oscura. Vale con cualquier medio de pago.">${escHtml(b.promos||'')}</textarea>
+    <div class="msg-bot-row"><button class="btn btn-sm" id="msgBotPromosBtn" onclick="msgBotPromosGuardar()">Guardar promos</button>${b.promos_por?`<span class="msg-bot-nota">Última vez: ${escHtml(b.promos_por.split(' ')[0])} · ${new Date(b.promos_por.split(' ')[1]).toLocaleDateString('es-AR')}</span>`:''}</div>
     <div><b>Probar el bot</b> <span class="msg-bot-nota">— escribile como si fueras un cliente de Instagram. No se le manda nada a nadie. <a href="#" onclick="msgBotTestReset();return false">Empezar de nuevo</a></span></div>
     <div class="msg-bot-test">
       <div class="msg-thread" id="msgBotTestThread"></div>
@@ -3883,6 +3886,16 @@ async function msgBotGuardar(){
     document.getElementById('msgBotPanel').style.display='none';
     toast(config.modo==='apagado'?'Bot apagado':'Bot guardado');
   }catch(e){toast(e.message,'error');btn.disabled=false}
+}
+async function msgBotPromosGuardar(){
+  const btn=document.getElementById('msgBotPromosBtn');
+  const texto=document.getElementById('msgBotPromos').value;
+  btn.disabled=true;btn.textContent='Guardando… (si el bot dormía tarda un minuto)';
+  try{
+    msgState.bot=await msgFn({accion:'bot_promos',texto});
+    toast('Promos guardadas: el bot ya las usa');
+  }catch(e){toast(e.message,'error')}
+  btn.disabled=false;btn.textContent='Guardar promos';
 }
 function renderMsgChatBot(){
   const el=document.getElementById('msgChatBot');if(!el)return;
