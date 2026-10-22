@@ -3821,7 +3821,7 @@ async function msgWaPlantilla(){
   btn.disabled=true;
   try{
     const r=await msgFn({accion:'wa_plantilla'});
-    toast('Plantilla "pedido_listo_retiro" creada en Meta (estado: '+(r.estado||'enviada')+')');
+    toast('Plantilla "'+(r.nombre||'')+'" creada en Meta (estado: '+(r.estado||'enviada')+')');
   }catch(e){toast(e.message,'error')}
   finally{btn.disabled=false}
 }
