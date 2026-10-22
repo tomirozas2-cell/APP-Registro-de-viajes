@@ -3738,7 +3738,8 @@ async function msgWaEstado(){
     const r=await msgFn({accion:'wa_estado'});
     msgState.wa=r;
     const btn=document.getElementById('msgWaBtn'),ban=document.getElementById('msgWaBanner');
-    btn.style.display=r.admin&&!r.conectado?'':'none';
+    // Con el número de prueba de Meta conectado sigue visible para el número real.
+    btn.style.display=r.admin&&(!r.conectado||r.estado==='prueba')?'':'none';
     if(r.estado==='desconectado'){
       ban.style.display='';
       ban.textContent='WhatsApp se desconectó de la bandeja (Meta corta la conexión si el celular pasa unos 14 días sin actividad). Los mensajes siguen llegando al celular; hay que volver a conectarlo.';
@@ -3762,7 +3763,7 @@ function msgFbSdk(appId){
 }
 async function msgWaConectar(){
   const r=msgState.wa;
-  if(!r?.config_id){toast('Falta la configuración del Registro insertado en Meta (config_id)','error');return}
+  if(!r?.config_id){msgWaConectarPrueba();return}
   const btn=document.getElementById('msgWaBtn');
   btn.disabled=true;btn.textContent='Conectando...';
   let sesion=null;
@@ -3795,6 +3796,22 @@ async function msgWaConectar(){
       })();
     },{config_id:r.config_id,response_type:'code',override_default_response_type:true,extras:r.extras||{}});
   }catch(e){toast(e.message,'error');fin()}
+}
+
+// Mientras no está el Registro insertado: número de prueba de Meta, para los
+// videos de la revisión de la app. El token temporal se pega acá y va directo
+// a meta-mensajes.
+async function msgWaConectarPrueba(){
+  const token=(prompt('Número de prueba de Meta. Pegá el token temporal (Configuración de la API > Token de acceso temporal):')||'').trim();
+  if(!token)return;
+  const phone=(prompt('Identificador del número de teléfono:','1421425374380706')||'').trim();
+  const waba=(prompt('Identificador de la cuenta de WhatsApp Business:','1117156804375863')||'').trim();
+  if(!phone||!waba)return;
+  try{
+    const res=await msgFn({accion:'wa_conectar_prueba',token,phone_number_id:phone,waba_id:waba});
+    toast('Número de prueba conectado: '+(res.numero||'')+(res.webhook==='ok'?'':' (webhook: '+res.webhook+')'));
+    await msgWaEstado();loadMensajes();
+  }catch(e){toast(e.message,'error')}
 }
 
 // ── Bot de Entelequia: contesta Instagram solo (apagado, siempre o por
