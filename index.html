@@ -3756,7 +3756,7 @@ async function msgWaEstado(){
 function msgFbSdk(appId){
   if(window.FB)return Promise.resolve();
   return new Promise((ok,err)=>{
-    window.fbAsyncInit=()=>{FB.init({appId,autoLogAppEvents:true,xfbml:false,version:'v21.0'});ok()};
+    window.fbAsyncInit=()=>{FB.init({appId,autoLogAppEvents:true,xfbml:false,version:'v26.0'});ok()};
     const s=document.createElement('script');
     s.src='https://connect.facebook.net/es_LA/sdk.js';s.async=true;s.defer=true;s.crossOrigin='anonymous';
     s.onerror=()=>err(new Error('No se pudo cargar el SDK de Facebook'));
