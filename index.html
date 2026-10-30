@@ -585,6 +585,12 @@ body.sidebar-collapsed .nav-link .nav-badge{position:absolute;top:3px;right:3px;
 .msg-compose textarea:focus{outline:none;border-color:var(--red)}
 .msg-send{border:none;border-radius:10px;padding:0 16px;height:40px;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;cursor:pointer}
 .msg-send:disabled{opacity:.45;cursor:default}
+.msg-drop{outline:2px dashed var(--red);outline-offset:-6px}
+.msg-attach{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:10px;width:40px;height:40px;font-size:18px;cursor:pointer;flex:none}
+.msg-attach:disabled{opacity:.45;cursor:default}
+.msg-react{border:none;background:none;color:inherit;opacity:.5;cursor:pointer;font-size:13px;padding:0 0 0 6px;line-height:1}
+.msg-react:hover,.msg-react.on{opacity:1}
+.msg-react.on{color:#e0245e}
 .msg-placeholder{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;padding:20px;text-align:center}
 @media (max-width:768px){
   .msg-wrap{grid-template-columns:1fr;height:calc(100vh - 190px);min-height:420px}
@@ -3459,7 +3465,7 @@ function renderEstadisticas(ventas,merc){
 // msg_mensajes; se responde por meta-mensajes. Mientras el panel está abierto
 // se refresca cada pocos segundos; el contador del menú, cada minuto.
 const MSG_POLL_MS=8000, MSG_BADGE_MS=60000, MSG_H24=24*3600e3, MSG_D7=7*24*3600e3;
-const msgState={convs:[],open:null,msgs:[],filtro:'todas',busqueda:'',timer:null,sending:false,sinAcceso:false,pend:[]};
+const msgState={convs:[],open:null,msgs:[],filtro:'todas',busqueda:'',timer:null,sending:false,sinAcceso:false,pend:[],reacc:new Set()};
 
 async function msgApi(path,opts={}){
   const H=await getAuthHeaders();
@@ -3636,7 +3642,9 @@ function renderMsgChat(){
     <div class="msg-thread" id="msgThread"><div class="msg-empty">Cargando...</div></div>
     <div id="msgAviso"></div>
     <div class="msg-compose">
-      <textarea id="msgText" rows="1" onkeydown="msgKey(event)" oninput="msgAutoGrow(this)"></textarea>
+      ${c.plataforma==='whatsapp'?'':`<button class="msg-attach" id="msgAttachBtn" onclick="document.getElementById('msgFile').click()" title="Enviar una foto">📎</button>
+      <input type="file" id="msgFile" accept="image/*" hidden onchange="msgEnviarImagen(this)">`}
+      <textarea id="msgText" rows="1" onkeydown="msgKey(event)" oninput="msgAutoGrow(this)" onpaste="msgPegar(event)"></textarea>
       <button class="msg-send" id="msgSendBtn" onclick="msgEnviar()">ENVIAR</button>
     </div>`;
   renderMsgAviso();
@@ -3653,7 +3661,10 @@ function renderMsgThread(forzarScroll){
     if(d!==dia){html+=`<div class="msg-day">${escHtml(d)}</div>`;dia=d}
     const hora=new Date(m.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     const quien=m.enviado_por==='bot'?'🤖 Bot · ':m.direccion==='out'&&m.enviado_por&&m.enviado_por!=='sistema'?escHtml(m.enviado_por.split('@')[0])+' · ':'';
-    html+=`<div class="msg-bubble ${m.direccion}">${m.texto?escHtml(m.texto):''}${msgAdjuntos(m.adjuntos)}<div class="msg-meta">${quien}${hora}</div></div>`;
+    const conv=msgState.convs.find(x=>x.id===msgState.open);
+    const corazon=m.direccion==='in'&&conv&&conv.plataforma!=='whatsapp'
+      ?`<button class="msg-react${msgState.reacc.has(m.id)?' on':''}" onclick="msgReaccionar(this.dataset.mid)" data-mid="${escHtml(m.id)}" title="Me gusta">${msgState.reacc.has(m.id)?'♥':'♡'}</button>`:'';
+    html+=`<div class="msg-bubble ${m.direccion}">${m.texto?escHtml(m.texto):''}${msgAdjuntos(m.adjuntos)}<div class="msg-meta">${quien}${hora}${corazon}</div></div>`;
   }
   // Mensajes recién escritos que Meta todavía no confirmó: se muestran al
   // instante y desaparecen cuando el real ya está en la base.
@@ -3661,7 +3672,7 @@ function renderMsgThread(forzarScroll){
   msgState.pend=msgState.pend.filter(p=>!(p.mid&&ids.has(p.mid)));
   for(const p of msgState.pend.filter(p=>p.conv===msgState.open)){
     const hora=new Date(p.at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    html+=`<div class="msg-bubble out" style="opacity:.6">${escHtml(p.texto)}<div class="msg-meta">enviando… · ${hora}</div></div>`;
+    html+=`<div class="msg-bubble out" style="opacity:.6">${p.imagen?'🖼️ Imagen':escHtml(p.texto)}<div class="msg-meta">enviando… · ${hora}</div></div>`;
   }
   th.innerHTML=html||'<div class="msg-empty">Sin mensajes guardados.</div>';
   if(th.querySelector('[data-media]'))msgCargarMedia();
@@ -3683,10 +3694,28 @@ function renderMsgAviso(){
     :desde>MSG_H24?'<div class="msg-window">Pasaron más de 24 h desde el último mensaje del cliente: la respuesta sale como "atención humana" (Meta lo permite hasta 7 días).</div>':'';
   const ta=document.getElementById('msgText'),btn=document.getElementById('msgSendBtn');
   ta.disabled=bloqueado;
-  ta.placeholder=bloqueado?'No se puede responder esta conversación':'Escribí una respuesta... (Enter envía, Shift+Enter salto de línea)';
+  ta.placeholder=bloqueado?'No se puede responder esta conversación':'Escribí una respuesta... (Enter envía, Shift+Enter salto de línea; podés arrastrar o pegar una foto)';
   btn.disabled=bloqueado||msgState.sending;
+  const at=document.getElementById('msgAttachBtn');if(at)at.disabled=bloqueado||msgState.sending;
 }
 
+function msgPegar(e){
+  const f=[...(e.clipboardData?.files||[])].find(x=>x.type.startsWith('image/'));
+  if(f){e.preventDefault();msgEnviarArchivo(f)}
+}
+// Arrastrar una foto sobre el chat (se engancha una sola vez: #msgChat no se recrea).
+document.addEventListener('DOMContentLoaded',()=>{
+  const box=document.getElementById('msgChat');if(!box)return;
+  const hayImg=e=>[...(e.dataTransfer?.types||[])].includes('Files');
+  box.addEventListener('dragover',e=>{if(hayImg(e)){e.preventDefault();box.classList.add('msg-drop')}});
+  box.addEventListener('dragleave',e=>{if(!box.contains(e.relatedTarget))box.classList.remove('msg-drop')});
+  box.addEventListener('drop',e=>{
+    if(!hayImg(e))return;
+    e.preventDefault();box.classList.remove('msg-drop');
+    const f=[...e.dataTransfer.files].find(x=>x.type.startsWith('image/'));
+    if(f)msgEnviarArchivo(f);else toast('Solo se pueden enviar imágenes','error');
+  });
+});
 function msgAutoGrow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,140)+'px'}
 function msgKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();msgEnviar()}}
 
@@ -3711,6 +3740,63 @@ async function msgEnviar(){
     }
     toast('No se envió: '+e.message,'error');
   }
+}
+
+// La foto se achica en el navegador (máx. 1600 px, JPEG) antes de subirla.
+function msgImagenBase64(file){
+  return new Promise((ok,err)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{
+      const k=Math.min(1,1600/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+      const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);
+      cx.drawImage(img,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(url);
+      ok(cv.toDataURL('image/jpeg',0.85).split(',')[1]);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);err(new Error('No se pudo leer la imagen'))};
+    img.src=url;
+  });
+}
+
+function msgEnviarImagen(input){
+  const file=input.files&&input.files[0];input.value='';
+  msgEnviarArchivo(file);
+}
+
+// Puede venir del botón 📎, de arrastrar sobre el chat o de pegar (Ctrl+V).
+async function msgEnviarArchivo(file){
+  if(!file||!msgState.open)return;
+  const c=msgState.convs.find(x=>x.id===msgState.open);
+  if(!c||c.plataforma==='whatsapp'){toast('Las imágenes solo se envían a Messenger e Instagram','error');return}
+  const at=document.getElementById('msgAttachBtn');
+  if(at&&at.disabled){toast('No se puede responder esta conversación','error');return}
+  if(!file.type.startsWith('image/')){toast('Elegí una imagen','error');return}
+  const p={conv:msgState.open,texto:'',imagen:true,at:Date.now(),mid:null};
+  msgState.pend.push(p);renderMsgThread(true);
+  try{
+    const base64=await msgImagenBase64(file);
+    const r=await msgFn({accion:'enviar_imagen',conversacion_id:p.conv,base64,mime:'image/jpeg'});
+    p.mid=r.id;
+    if(msgState.open===p.conv)await msgLoadThread(true);
+    loadMensajes();
+  }catch(e){
+    msgState.pend=msgState.pend.filter(x=>x!==p);
+    if(msgState.open===p.conv)renderMsgThread(false);
+    toast('No se envió la imagen: '+e.message,'error');
+  }
+}
+
+// Corazón a un mensaje del cliente (Messenger/Instagram). Se recuerda solo
+// mientras la pestaña está abierta: Meta no devuelve qué reacciones hay.
+async function msgReaccionar(mid){
+  const quitar=msgState.reacc.has(mid);
+  try{
+    await msgFn({accion:'reaccionar',conversacion_id:msgState.open,mensaje_id:mid,quitar});
+    if(quitar)msgState.reacc.delete(mid);else msgState.reacc.add(mid);
+    renderMsgThread(false);
+  }catch(e){toast('No se pudo reaccionar: '+e.message,'error')}
 }
 
 async function msgSincronizar(){
